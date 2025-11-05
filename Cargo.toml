@@ -1,0 +1,14 @@
+[package]
+name = "questboard"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+axum = "0.8.6"
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio"] }
+tokio = { version = "1.48.0", features = ["full"] }
+tower = "0.5.2"
+tower-http = "0.6.6"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
