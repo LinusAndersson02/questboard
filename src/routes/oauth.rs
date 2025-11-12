@@ -1,48 +1,40 @@
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, TokenUrl};
-use axum::extract::State;
-use axum::extract::Query;
+use anyhow::Context;
+use axum::{extract::{Query, State}, response::{IntoResponse, Redirect}, http::StatusCode};
 use axum_extra::extract::Host;
-use anyhow::Context;  
-use std::{collections::HashMap, env};
-use axum::response::Redirect;
-use oauth2::PkceCodeChallenge;
-use oauth2::CsrfToken;
-use oauth2::Scope;
-use tracing::{info,error};
-use reqwest::header;
-use axum::response::IntoResponse;
-use axum::http::HeaderMap;
-use axum_extra::headers;
-use serde::Deserialize;
-use oauth2::AuthorizationCode;
-use oauth2::PkceCodeVerifier;
-use oauth2::TokenResponse;
+use oauth2::{
+    AuthorizationCode, CsrfToken, PkceCodeChallenge, PkceCodeVerifier, Scope, TokenResponse,
+    AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, TokenUrl,
+    basic::BasicClient,
+};
 use reqwest::Client as HttpClient;
-use uuid::Uuid;
+use serde::Deserialize;
+use std::{collections::HashMap, env};
+use tracing::{error, info};
 
 use super::AppState;
 
+use crate::auth::{AuthSession, User};
 
 type GoogleOAuthClient =
     BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>;
 
 fn google_oauth_client(redirect_url: &str) -> anyhow::Result<GoogleOAuthClient> {
-    let client_id = env::var("GOOGLE_CLIENT_ID")
-        .context("GOOGLE_CLIENT_ID must be set")?;
-    let client_secret = env::var("GOOGLE_CLIENT_SECRET")
-        .context("GOOGLE_CLIENT_SECRET must be set")?;
+    let client_id = env::var("GOOGLE_CLIENT_ID").context("GOOGLE_CLIENT_ID must be set")?;
+    let client_secret =
+        env::var("GOOGLE_CLIENT_SECRET").context("GOOGLE_CLIENT_SECRET must be set")?;
 
-    
-    let client : GoogleOAuthClient = BasicClient::new(ClientId::new(client_id.to_string()))
+    let client: GoogleOAuthClient = BasicClient::new(ClientId::new(client_id.to_string()))
         .set_client_secret(ClientSecret::new(client_secret.to_string()))
-        .set_auth_uri(AuthUrl::new("https://accounts.google.com/o/oauth2/v2/auth".to_string())?)
-        .set_token_uri(TokenUrl::new("https://oauth2.googleapis.com/token".to_string())?)
+        .set_auth_uri(AuthUrl::new(
+            "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
+        )?)
+        .set_token_uri(TokenUrl::new(
+            "https://oauth2.googleapis.com/token".to_string(),
+        )?)
         .set_redirect_uri(RedirectUrl::new(redirect_url.to_string())?);
-
 
     Ok(client)
 }
-
 
 fn redirect_uri_from(hostname: &str) -> String {
     if let Ok(uri) = std::env::var("OAUTH_REDIRECT_URI") {
@@ -53,22 +45,19 @@ fn redirect_uri_from(hostname: &str) -> String {
     } else {
         "https"
     };
-
     format!("{proto}://{hostname}/oauth/google/callback")
 }
 
-
-
-pub async fn login_start( State(state) : State<AppState>,
-Host(host): Host,
-Query(mut params) : Query<HashMap<String,String>>,
-) -> anyhow::Result<Redirect, (axum::http::StatusCode, String)> {
-
-    let return_url = params.remove("return_url").unwrap_or_else(|| "/".to_string()) ;
+pub async fn login_start(
+    State(state): State<AppState>,
+    Host(host): Host,
+    Query(mut params): Query<HashMap<String, String>>,
+) -> anyhow::Result<Redirect, (StatusCode, String)> {
+    let return_url = params.remove("return_url").unwrap_or_else(|| "/".to_string());
     let redirect_url = redirect_uri_from(&host);
 
-    let client = google_oauth_client(&redirect_url).map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-
+    let client = google_oauth_client(&redirect_url)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
     let (authorize_url, csrf_state) = client
@@ -79,31 +68,25 @@ Query(mut params) : Query<HashMap<String,String>>,
         .set_pkce_challenge(pkce_challenge)
         .url();
 
-    tracing::info!(%redirect_url, auth_url=%authorize_url, "oauth start");
-
 
     if let Err(e) = sqlx::query(
-    r#"
-    INSERT INTO oauth2_state_storage (csrf_state, pkce_code_verifier, return_url)
-    VALUES ($1,$2,$3)
-    "#,
+        r#"
+        INSERT INTO oauth2_state_storage (csrf_state, pkce_code_verifier, return_url)
+        VALUES ($1,$2,$3)
+        "#,
     )
-        .bind(csrf_state.secret())
-            .bind(pkce_verifier.secret())
-            .bind(&return_url)
-            .execute(&state.db_pool)
-            .await
+    .bind(csrf_state.secret())
+    .bind(pkce_verifier.secret())
+    .bind(&return_url)
+    .execute(&state.db_pool)
+    .await
     {
         error!(?e, "failed to save oauth state");
-        return Err((axum::http::StatusCode::INTERNAL_SERVER_ERROR, "oauth state error".into()))
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, "oauth state error".into()));
     }
 
-
-
-   Ok(Redirect::to(authorize_url.as_ref()))
-
+    Ok(Redirect::to(authorize_url.as_ref()))
 }
-
 
 #[derive(Deserialize)]
 pub struct CallbackQuery {
@@ -115,10 +98,11 @@ pub async fn oauth_callback(
     State(state): State<AppState>,
     Host(host): Host,
     Query(query): Query<CallbackQuery>,
-) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
+    mut auth: AuthSession,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
     let redirect_uri = redirect_uri_from(&host);
     let client = google_oauth_client(&redirect_uri)
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
     let (pkce_code_verifier, return_url): (String, String) = sqlx::query_as(
         r#"
@@ -132,7 +116,7 @@ pub async fn oauth_callback(
     .await
     .map_err(|e| {
         error!(?e, "invalid or missing oauth state");
-        (axum::http::StatusCode::BAD_REQUEST, "invalid oauth state".into())
+        (StatusCode::BAD_REQUEST, "invalid oauth state".into())
     })?;
 
     let token_resp = client
@@ -142,7 +126,7 @@ pub async fn oauth_callback(
         .await
         .map_err(|e| {
             error!(?e, "token exchange failed");
-            (axum::http::StatusCode::BAD_REQUEST, "token exchange failed".into())
+            (StatusCode::BAD_REQUEST, "token exchange failed".into())
         })?;
 
     let access_token = token_resp.access_token().secret();
@@ -155,13 +139,13 @@ pub async fn oauth_callback(
         .and_then(|r| r.error_for_status())
         .map_err(|e| {
             error!(?e, "userinfo request failed");
-            (axum::http::StatusCode::BAD_GATEWAY, "userinfo request failed".into())
+            (StatusCode::BAD_GATEWAY, "userinfo request failed".into())
         })?
         .json()
         .await
         .map_err(|e| {
             error!(?e, "userinfo parse failed");
-            (axum::http::StatusCode::BAD_GATEWAY, "userinfo parse failed".into())
+            (StatusCode::BAD_GATEWAY, "userinfo parse failed".into())
         })?;
 
     let google_sub = userinfo.get("sub").and_then(|v| v.as_str()).unwrap_or_default();
@@ -171,24 +155,23 @@ pub async fn oauth_callback(
     let picture = userinfo.get("picture").and_then(|v| v.as_str()).unwrap_or("");
 
     if !email_verified {
-        return Err((axum::http::StatusCode::UNAUTHORIZED, "email not verified".into()));
+        return Err((StatusCode::UNAUTHORIZED, "email not verified".into()));
     }
 
-    let (user_id,): (String,) = sqlx::query_as(
+   use uuid::Uuid;
+
+    let user_id: Uuid = sqlx::query_scalar!(
         r#"
         INSERT INTO users (google_sub, email, name, avatar_url)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (google_sub)
-        DO UPDATE SET email = EXCLUDED.email,
-                      name = EXCLUDED.name,
-                      avatar_url = EXCLUDED.avatar_url
-        RETURNING id::text
+          DO UPDATE SET email = EXCLUDED.email,
+                        name = EXCLUDED.name,
+                        avatar_url = EXCLUDED.avatar_url
+        RETURNING id
         "#,
+        google_sub, email, name, picture
     )
-    .bind(google_sub)
-    .bind(email)
-    .bind(name)
-    .bind(picture)
     .fetch_one(&state.db_pool)
     .await
     .map_err(|e| {
@@ -196,69 +179,30 @@ pub async fn oauth_callback(
         (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "user upsert failed".into())
     })?;
 
-    let p1 = Uuid::new_v4().to_string();
-    let p2 = Uuid::new_v4().to_string();
-    let session_token = format!("{p1}_{p2}");
+    
+    let user = User {
+        id: user_id,
+        email: email.to_string(),
+        name: if name.is_empty() { None } else { Some(name.to_string()) },
+        avatar: if picture.is_empty() { None } else { Some(picture.to_string()) },
+        session_key: google_sub.to_string(),
+    };
 
-    let now = chrono::Utc::now();
-    let exp = now + chrono::Duration::hours(24);
-
-    sqlx::query(
-        r#"
-        INSERT INTO user_sessions (session_token_p1, session_token_p2, user_id, created_at, expires_at)
-        VALUES ($1, $2, $3, $4, $5)
-        "#,
-    )
-    .bind(&p1)
-    .bind(&p2)
-    .bind(&user_id)
-    .bind(now)
-    .bind(exp)
-    .execute(&state.db_pool)
-    .await
-    .map_err(|e| {
-        error!(?e, "failed to create session");
-        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "session create failed".into())
+    auth.login(&user).await.map_err(|e| {
+        error!(?e, "auth.login failed");
+        (StatusCode::INTERNAL_SERVER_ERROR, "login failed".into())
     })?;
 
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::SET_COOKIE,
-        format!(
-            "session_token={}; Path=/; HttpOnly; SameSite=Strict{}",
-            session_token,
-            if host.starts_with("localhost") || host.starts_with("127.0.0.1") {
-                "" 
-            } else {
-                "; Secure"
-            }
-        ).parse().unwrap(),
-    );
+    auth.session.cycle_id().await.map_err(|e| {
+        error!(?e, "session.cycle_id failed");
+        (StatusCode::INTERNAL_SERVER_ERROR, "session rotate failed".into())
+    })?;
 
-    info!("user {} logged in", user_id);
-    Ok((headers, Redirect::to(&return_url)))
+    Ok(Redirect::to(&return_url))
 }
 
-pub async fn logout(
-    State(state): State<AppState>,
-    cookie_header: Option<axum_extra::TypedHeader<headers::Cookie>>,
-) -> impl IntoResponse {
-    if let Some(axum_extra::TypedHeader(cookies)) = cookie_header {
-        if let Some(token) = cookies.get("session_token") {
-            if let Some((p1, _)) = token.split_once('_') {
-                let _ = sqlx::query("DELETE FROM user_sessions WHERE session_token_p1 = $1")
-                    .bind(p1)
-                    .execute(&state.db_pool)
-                    .await;
-            }
-        }
-    }
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::SET_COOKIE,
-        "session_token=deleted; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
-            .parse()
-            .unwrap(),
-    );
-    (headers, Redirect::to("/"))
+pub async fn logout(mut auth: AuthSession) -> impl IntoResponse {
+    let _ = auth.logout().await;
+    Redirect::to("/")
 }
+

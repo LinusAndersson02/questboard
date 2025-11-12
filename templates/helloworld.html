@@ -1,9 +1,11 @@
-<!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8"><title>{{ title }}</title></head>
-  <body>
-	  <h1> Hello world !</h1>
-    <p>Crate: {{ crate }}, Version: {{ version }}</p>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+  {% if user %}
+    <h1>Welcome back, {{ user.name or user.email }} 👋</h1>
+    <p>You’re signed in. Go to your <a href="/account">account</a>.</p>
+  {% else %}
+    <h1>Welcome to Questboard</h1>
+    <p>Sign in to continue.</p>
+  {% endif %}
+{% endblock %}
 

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Your account</h1>
+  {% if user %}
+    <ul>
+      <li><strong>ID:</strong> {{ user.id }}</li>
+      <li><strong>Email:</strong> {{ user.email }}</li>
+      {% if user.name %}<li><strong>Name:</strong> {{ user.name }}{% endif %}
+      {% if user.avatar %}<li><strong>Avatar:</strong> <img class="avatar" src="{{ user.avatar }}">{% endif %}
+    </ul>
+  {% else %}
+    <p>Not signed in.</p>
+  {% endif %}
+{% endblock %}
+

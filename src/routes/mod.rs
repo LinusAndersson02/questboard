@@ -1,27 +1,27 @@
 mod oauth;
 
-use axum::Router;
-use axum::routing::get;
+use axum::{
+    Router,
+    extract::State,
+    http::StatusCode,
+    response::{Html, IntoResponse},
+    routing::get,
+};
+use minijinja::{Environment, context, path_loader};
 use minijinja_autoreload::AutoReloader;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tower_http::trace::TraceLayer;
-
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::response::Html;
-use axum::response::IntoResponse;
-use minijinja::Environment;
-use minijinja::context;
-use minijinja::path_loader;
 use std::time::Duration;
-use tower_http::LatencyUnit;
-use tower_http::classify::ServerErrorsFailureClass;
-use tower_http::trace::DefaultMakeSpan;
-use tower_http::trace::DefaultOnResponse;
-use tracing::Level;
-use tracing::Span;
-use tracing::error;
+use tower_http::{
+    LatencyUnit,
+    classify::ServerErrorsFailureClass,
+    trace::TraceLayer,
+    trace::{DefaultMakeSpan, DefaultOnResponse},
+};
+use tracing::{Level, Span, error};
+
+use crate::auth::{AuthSession, User};
+use axum_login::login_required;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -29,7 +29,7 @@ pub struct AppState {
     pub templates: Arc<AutoReloader>,
 }
 
-async fn index(State(state): State<AppState>) -> impl IntoResponse {
+async fn index(State(state): State<AppState>, auth: AuthSession) -> impl IntoResponse {
     let env = match state.templates.acquire_env() {
         Ok(env) => env,
         Err(e) => {
@@ -46,10 +46,13 @@ async fn index(State(state): State<AppState>) -> impl IntoResponse {
         }
     };
 
+    let current_user: Option<User> = auth.user.clone();
+
     let html = match tmpl.render(context! {
         title => "Questboard",
         crate => env!("CARGO_PKG_NAME"),
         version => env!("CARGO_PKG_VERSION"),
+        user => current_user,
     }) {
         Ok(s) => s,
         Err(e) => {
@@ -58,6 +61,35 @@ async fn index(State(state): State<AppState>) -> impl IntoResponse {
         }
     };
 
+    Html(html).into_response()
+}
+
+async fn account(State(state): State<AppState>, auth: AuthSession) -> impl IntoResponse {
+    let env = match state.templates.acquire_env() {
+        Ok(env) => env,
+        Err(e) => {
+            error!(?e, "failed to acquire template env");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+    let tmpl = match env.get_template("account.html") {
+        Ok(t) => t,
+        Err(e) => {
+            error!(?e, "template not found/parse failed");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+    let html = match tmpl.render(minijinja::context! {
+        title => "Account",
+        version => env!("CARGO_PKG_VERSION"),
+        user => auth.user.clone(),
+    }) {
+        Ok(s) => s,
+        Err(e) => {
+            error!(?e, "template render error");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
     Html(html).into_response()
 }
 
@@ -80,6 +112,13 @@ pub async fn create_routes(db_pool: PgPool) -> anyhow::Result<Router> {
         .route("/auth/google/start", get(oauth::login_start))
         .route("/oauth/google/callback", get(oauth::oauth_callback))
         .route("/logout", get(oauth::logout))
+        .route(
+            "/account",
+            get(account).route_layer(login_required!(
+                crate::auth::DbBackend,
+                login_url = "/auth/google/start"
+            )),
+        )
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(
