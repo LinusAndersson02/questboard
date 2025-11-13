@@ -1,15 +1,19 @@
 use anyhow::Context;
-use axum::{extract::{Query, State}, response::{IntoResponse, Redirect}, http::StatusCode};
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Redirect},
+};
 use axum_extra::extract::Host;
 use oauth2::{
-    AuthorizationCode, CsrfToken, PkceCodeChallenge, PkceCodeVerifier, Scope, TokenResponse,
-    AuthUrl, ClientId, ClientSecret, EndpointNotSet, EndpointSet, RedirectUrl, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointNotSet, EndpointSet,
+    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
     basic::BasicClient,
 };
 use reqwest::Client as HttpClient;
 use serde::Deserialize;
 use std::{collections::HashMap, env};
-use tracing::{error, info};
+use tracing::error;
 
 use super::AppState;
 
@@ -53,7 +57,9 @@ pub async fn login_start(
     Host(host): Host,
     Query(mut params): Query<HashMap<String, String>>,
 ) -> anyhow::Result<Redirect, (StatusCode, String)> {
-    let return_url = params.remove("return_url").unwrap_or_else(|| "/".to_string());
+    let return_url = params
+        .remove("return_url")
+        .unwrap_or_else(|| "/".to_string());
     let redirect_url = redirect_uri_from(&host);
 
     let client = google_oauth_client(&redirect_url)
@@ -68,7 +74,6 @@ pub async fn login_start(
         .set_pkce_challenge(pkce_challenge)
         .url();
 
-
     if let Err(e) = sqlx::query(
         r#"
         INSERT INTO oauth2_state_storage (csrf_state, pkce_code_verifier, return_url)
@@ -82,7 +87,10 @@ pub async fn login_start(
     .await
     {
         error!(?e, "failed to save oauth state");
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, "oauth state error".into()));
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "oauth state error".into(),
+        ));
     }
 
     Ok(Redirect::to(authorize_url.as_ref()))
@@ -148,17 +156,29 @@ pub async fn oauth_callback(
             (StatusCode::BAD_GATEWAY, "userinfo parse failed".into())
         })?;
 
-    let google_sub = userinfo.get("sub").and_then(|v| v.as_str()).unwrap_or_default();
-    let email = userinfo.get("email").and_then(|v| v.as_str()).unwrap_or_default();
-    let email_verified = userinfo.get("email_verified").and_then(|v| v.as_bool()).unwrap_or(false);
+    let google_sub = userinfo
+        .get("sub")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default();
+    let email = userinfo
+        .get("email")
+        .and_then(|v| v.as_str())
+        .unwrap_or_default();
+    let email_verified = userinfo
+        .get("email_verified")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     let name = userinfo.get("name").and_then(|v| v.as_str()).unwrap_or("");
-    let picture = userinfo.get("picture").and_then(|v| v.as_str()).unwrap_or("");
+    let picture = userinfo
+        .get("picture")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
 
     if !email_verified {
         return Err((StatusCode::UNAUTHORIZED, "email not verified".into()));
     }
 
-   use uuid::Uuid;
+    use uuid::Uuid;
 
     let user_id: Uuid = sqlx::query_scalar!(
         r#"
@@ -170,21 +190,34 @@ pub async fn oauth_callback(
                         avatar_url = EXCLUDED.avatar_url
         RETURNING id
         "#,
-        google_sub, email, name, picture
+        google_sub,
+        email,
+        name,
+        picture
     )
     .fetch_one(&state.db_pool)
     .await
     .map_err(|e| {
         error!(?e, "failed to upsert user");
-        (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "user upsert failed".into())
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "user upsert failed".into(),
+        )
     })?;
 
-    
     let user = User {
         id: user_id,
         email: email.to_string(),
-        name: if name.is_empty() { None } else { Some(name.to_string()) },
-        avatar: if picture.is_empty() { None } else { Some(picture.to_string()) },
+        name: if name.is_empty() {
+            None
+        } else {
+            Some(name.to_string())
+        },
+        avatar: if picture.is_empty() {
+            None
+        } else {
+            Some(picture.to_string())
+        },
         session_key: google_sub.to_string(),
     };
 
@@ -195,7 +228,10 @@ pub async fn oauth_callback(
 
     auth.session.cycle_id().await.map_err(|e| {
         error!(?e, "session.cycle_id failed");
-        (StatusCode::INTERNAL_SERVER_ERROR, "session rotate failed".into())
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "session rotate failed".into(),
+        )
     })?;
 
     Ok(Redirect::to(&return_url))
@@ -205,4 +241,3 @@ pub async fn logout(mut auth: AuthSession) -> impl IntoResponse {
     let _ = auth.logout().await;
     Redirect::to("/")
 }
-

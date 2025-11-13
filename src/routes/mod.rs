@@ -1,4 +1,5 @@
 mod oauth;
+mod quests;
 
 use axum::{
     Router,
@@ -20,7 +21,7 @@ use tower_http::{
 };
 use tracing::{Level, Span, error};
 
-use crate::auth::{AuthSession, User};
+use crate::{auth::{AuthSession, User}, routes::quests::quests_router};
 use axum_login::login_required;
 
 #[derive(Clone)]
@@ -119,6 +120,7 @@ pub async fn create_routes(db_pool: PgPool) -> anyhow::Result<Router> {
                 login_url = "/auth/google/start"
             )),
         )
+        .merge(quests_router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(

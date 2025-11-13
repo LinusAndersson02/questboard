@@ -6,7 +6,9 @@ use tracing::{error, info};
 use sqlx::{Error as SqlxError, postgres::PgPoolOptions};
 
 mod auth;
+mod models;
 mod routes;
+mod services;
 
 use axum::Router;
 
@@ -41,13 +43,16 @@ pub async fn run(database_url: String) -> anyhow::Result<()> {
     };
 
     let session_layer = SessionManagerLayer::new(store)
-    .with_name(if cfg!(debug_assertions) { "questboard_session" } else { "__Host-questboard" })
-    .with_http_only(true)
-    .with_secure(!cfg!(debug_assertions)) 
-    .with_same_site(SameSite::Lax)
-    .with_expiry(Expiry::OnInactivity(TimeDuration::hours(24)));
+        .with_name(if cfg!(debug_assertions) {
+            "questboard_session"
+        } else {
+            "__Host-questboard"
+        })
+        .with_http_only(true)
+        .with_secure(!cfg!(debug_assertions))
+        .with_same_site(SameSite::Lax)
+        .with_expiry(Expiry::OnInactivity(TimeDuration::hours(24)));
 
-    
     let backend = auth::DbBackend {
         pool: db_pool.clone(),
     };
