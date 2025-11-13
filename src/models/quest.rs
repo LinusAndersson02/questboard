@@ -1,23 +1,24 @@
+use serde::Deserialize;
 use sqlx::FromRow;
 use sqlx::Type;
 use time::{Date, OffsetDateTime, Time};
 use uuid::Uuid;
-use serde::Deserialize;
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Deserialize)]
+use serde::Serialize;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Deserialize, Serialize)]
 #[sqlx(type_name = "quest_kind", rename_all = "lowercase")]
 pub enum QuestKind {
     Once,
     Recurring,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Deserialize, Serialize)]
 #[sqlx(type_name = "repeat_unit", rename_all = "lowercase")]
 pub enum RepeatUnit {
     Day,
     Week,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, FromRow, Deserialize, Serialize)]
 pub struct Quest {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -44,7 +45,7 @@ pub struct Quest {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, FromRow, Deserialize, Serialize)]
 pub struct QuestCompletion {
     pub id: i64,
     pub quest_id: Uuid,
@@ -53,7 +54,7 @@ pub struct QuestCompletion {
     pub completed_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CreateQuestInput {
     pub title: String,
     pub description: String,
@@ -73,7 +74,7 @@ pub struct CreateQuestInput {
     pub timezone: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct UpdateQuestInput {
     pub title: Option<String>,
     pub description: Option<String>,

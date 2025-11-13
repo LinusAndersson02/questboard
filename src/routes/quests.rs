@@ -1,15 +1,15 @@
+use axum::http::StatusCode;
 use axum::{
+    Json, Router,
     extract::{Path, State},
     routing::{get, post},
-    Json, Router,
 };
-use reqwest::StatusCode;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::{
     auth::AuthSession,
-    models::{Quest, QuestCompletion, CreateQuestInput, UpdateQuestInput},
+    models::{CreateQuestInput, Quest, QuestCompletion, UpdateQuestInput},
     routes::AppState,
     services::quest_service,
 };
@@ -18,12 +18,15 @@ use axum_login::login_required;
 pub fn quests_router() -> Router<AppState> {
     Router::new()
         .route("/quests", get(list_quests).post(create_quest))
-        .route("/quests/:id", get(get_quest).put(update_quest).delete(delete_quest))
-        .route("/quests/:id/complete", post(complete_quest))
+        .route(
+            "/quests/{id}",
+            get(get_quest).put(update_quest).delete(delete_quest),
+        )
+        .route("/quests/{id}/complete", post(complete_quest))
         .route_layer(login_required!(
-                crate::auth::DbBackend,
-                login_url = "/auth/google/start"
-                ))
+            crate::auth::DbBackend,
+            login_url = "/auth/google/start"
+        ))
 }
 
 pub async fn list_quests(
@@ -142,14 +145,12 @@ pub async fn complete_quest(
 
     let now = OffsetDateTime::now_utc();
 
-    let completion =
-        quest_service::complete_quest_for_current_period(&state.db_pool, &quest, now)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let completion = quest_service::complete_quest_for_current_period(&state.db_pool, &quest, now)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     match completion {
         Some(c) => Ok(Json(c)),
         None => Err(StatusCode::BAD_REQUEST), // not active in current period
     }
 }
-
