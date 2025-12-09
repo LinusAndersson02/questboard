@@ -1,6 +1,5 @@
 mod oauth;
 mod quests;
-
 use axum::{
     Router,
     extract::State,
@@ -21,7 +20,12 @@ use tower_http::{
 };
 use tracing::{Level, Span, error};
 
-use crate::{auth::{AuthSession, User}, routes::quests::quests_router};
+use crate::{
+    auth::{AuthSession, User},
+    models::Quest,
+    routes::quests::quests_router,
+    services::quest_service,
+};
 use axum_login::login_required;
 
 #[derive(Clone)]
@@ -31,6 +35,20 @@ pub struct AppState {
 }
 
 async fn index(State(state): State<AppState>, auth: AuthSession) -> impl IntoResponse {
+    let current_user: Option<User> = auth.user.clone();
+
+    let quests: Option<Vec<Quest>> = if let Some(ref u) = current_user {
+        match quest_service::list_quests_for_user(&state.db_pool, u.id).await {
+            Ok(list) => Some(list),
+            Err(e) => {
+                error!(?e, "failed to load quests for user");
+                None
+            }
+        }
+    } else {
+        None
+    };
+
     let env = match state.templates.acquire_env() {
         Ok(env) => env,
         Err(e) => {
@@ -39,7 +57,7 @@ async fn index(State(state): State<AppState>, auth: AuthSession) -> impl IntoRes
         }
     };
 
-    let tmpl = match env.get_template("helloworld.html") {
+    let tmpl = match env.get_template("home.html") {
         Ok(t) => t,
         Err(e) => {
             error!(?e, "template not found or failed to parse");
@@ -47,13 +65,12 @@ async fn index(State(state): State<AppState>, auth: AuthSession) -> impl IntoRes
         }
     };
 
-    let current_user: Option<User> = auth.user.clone();
-
     let html = match tmpl.render(context! {
         title => "Questboard",
         crate => env!("CARGO_PKG_NAME"),
         version => env!("CARGO_PKG_VERSION"),
         user => current_user,
+        quests => quests,
     }) {
         Ok(s) => s,
         Err(e) => {

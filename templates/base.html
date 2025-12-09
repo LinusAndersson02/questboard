@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,31 +6,346 @@
   <title>{{ title or "Questboard" }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:0; }
-    header, main { max-width: 900px; margin: 0 auto; padding: 16px; }
-    header { display:flex; align-items:center; gap:12px; justify-content:space-between; }
-    nav a, button, .btn { padding:8px 12px; border-radius:8px; text-decoration:none; border:1px solid #ddd; }
-    img.avatar { width:28px; height:28px; border-radius:50%; vertical-align:middle; }
-    .right { display:flex; gap:10px; align-items:center; }
+    :root {
+      --bg: #fafafa;
+      --card-bg: #ffffff;
+      --border: #e2e2e2;
+      --accent: #4f46e5;
+      --accent-soft: #eef2ff;
+      --accent-text: #312e81;
+      --text: #111827;
+      --muted: #6b7280;
+      --danger: #b91c1c;
+      --radius: 10px;
+      --shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background: radial-gradient(circle at top, #eef2ff 0, #fafafa 45%, #ffffff 100%);
+      min-height: 100vh;
+    }
+
+    header, main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .app-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .app-title-main {
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .app-title-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    nav a, button, .btn {
+      padding: 8px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+    }
+
+    img.avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      vertical-align: middle;
+      object-fit: cover;
+    }
+
+    .right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    main {
+      padding: 24px 16px 40px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+    }
+
+    .pill small {
+      font-size: 11px;
+      opacity: 0.75;
+    }
+
+    /* Quest list */
+    .quest-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quest-card {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: #ffffff;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 12px;
+      align-items: center;
+    }
+
+    .quest-main {
+      min-width: 0;
+    }
+
+    .quest-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin: 0 0 2px;
+    }
+
+    .quest-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 4px;
+    }
+
+    .quest-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .quest-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: #f9fafb;
+    }
+
+    .badge-recurring {
+      border-color: #22c55e;
+      color: #166534;
+      background: #ecfdf3;
+    }
+
+    .badge-once {
+      border-color: #f97316;
+      color: #9a3412;
+      background: #fff7ed;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 16px;
+      max-width: 480px;
+      width: 100%;
+      padding: 20px 20px 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      font: inherit;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.9);
+      background: #ffffff;
+    }
+
+    .field textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    .text-danger {
+      color: var(--danger);
+      font-size: 13px;
+    }
+
+    @media (max-width: 600px) {
+      header, main {
+        padding-inline: 12px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .right {
+        align-self: stretch;
+        justify-content: space-between;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <div><strong>Questboard</strong> <small>v{{ version }}</small></div>
+    <div class="app-title">
+      <div class="app-title-main">Questboard</div>
+      <div class="app-title-sub">v{{ version }}</div>
+    </div>
     <nav class="right">
       {% if user %}
-        {% if user.avatar %}<img class="avatar" src="{{ user.avatar }}" alt="avatar">{% endif %}
+        {% if user.avatar %}
+          <img class="avatar" src="{{ user.avatar }}" alt="avatar">
+        {% endif %}
         <span>{{ user.name or user.email }}</span>
-        <a class="btn" href="/account">Account</a>
+        <span class="pill">
+          XP {{ user.xp_total }} • 💰 {{ user.coins }}
+        </span>
+        <a class="btn btn-ghost" href="/account">Account</a>
         <a class="btn" href="/logout">Logout</a>
       {% else %}
-        <a id="google-login" class="btn" href="/auth/google/start">Continue with Google</a>
+        <a id="google-login" class="btn btn-primary" href="/auth/google/start">Continue with Google</a>
         <noscript><a class="btn" href="/auth/google/start?return_url=/">Login</a></noscript>
         <script>
           (function(){
             var u = location.pathname + location.search + location.hash;
-            document.getElementById('google-login').href =
-              "/auth/google/start?return_url=" + encodeURIComponent(u || "/");
+            var el = document.getElementById('google-login');
+            if (el) {
+              el.href = "/auth/google/start?return_url=" + encodeURIComponent(u || "/");
+            }
           })();
         </script>
       {% endif %}

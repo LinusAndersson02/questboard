@@ -9,6 +9,9 @@ CREATE TABLE quests (
     description     TEXT NOT NULL,
 
     kind            quest_kind NOT NULL,
+	
+xp_reward INTEGER NOT NULL DEFAULT 0,
+coin_reward INTEGER NOT NULL DEFAULT 0,
 
    repeat_unit     repeat_unit,        
     repeat_interval INTEGER,      

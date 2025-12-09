@@ -218,6 +218,14 @@ pub async fn oauth_callback(
         } else {
             Some(picture.to_string())
         },
+
+        xp_total: 0,
+        coins: 0,
+        current_streak: 0,
+        longest_streak: 0,
+        last_active_date: None,
+        timezone: "UTC".to_string(),
+
         session_key: google_sub.to_string(),
     };
 

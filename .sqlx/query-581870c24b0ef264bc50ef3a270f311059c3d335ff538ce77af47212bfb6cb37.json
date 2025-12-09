@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO users (google_sub, email, name, avatar_url)\n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT (google_sub)\n          DO UPDATE SET email = EXCLUDED.email,\n                        name = EXCLUDED.name,\n                        avatar_url = EXCLUDED.avatar_url\n        RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "581870c24b0ef264bc50ef3a270f311059c3d335ff538ce77af47212bfb6cb37"
+}

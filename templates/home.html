@@ -1,0 +1,220 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+  {% if user %}
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Welcome back, {{ user.name or user.email }} 👋</div>
+          <div class="subtitle">
+            Track your quests, earn XP, and keep your streak alive.
+          </div>
+        </div>
+        <button id="open-create-quest" class="btn btn-primary">
+          + New quest
+        </button>
+      </div>
+
+      <section aria-label="Your quests">
+        {% if quests and quests|length > 0 %}
+          <ul class="quest-list">
+            {% for q in quests %}
+              <li class="quest-card">
+                <div class="quest-main">
+                  <p class="quest-title">{{ q.title }}</p>
+                  <p class="quest-desc">{{ q.description }}</p>
+                  <div class="quest-meta">
+                    <span>
+                      {% if q.kind == "recurring" %}
+                        <span class="badge badge-recurring">Recurring</span>
+                      {% else %}
+                        <span class="badge badge-once">One-time</span>
+                      {% endif %}
+                    </span>
+                    <span>XP {{ q.xp_reward }} • 💰 {{ q.coin_reward }}</span>
+                  </div>
+                </div>
+                <div class="quest-actions">
+                  <form method="post" action="/quests/{{ q.id }}/complete" style="margin:0;">
+                    <button type="submit" class="btn btn-primary" style="font-size:13px;padding-inline:10px;">
+                      Complete
+                    </button>
+                  </form>
+                  <a class="btn btn-ghost" style="font-size:12px;padding-inline:8px;" href="/quests/{{ q.id }}">
+                    View / edit (JSON)
+                  </a>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="subtitle" style="margin-top:4px;">
+            You don't have any quests yet. Create your first one to get started!
+          </p>
+        {% endif %}
+      </section>
+    </div>
+
+    {# Modal for creating a quest #}
+    <div id="create-quest-modal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-header">
+          <h2 id="modal-title" class="modal-title">Create a new quest</h2>
+          <button type="button" class="btn btn-ghost" id="close-create-quest" aria-label="Close">
+            ✕
+          </button>
+        </div>
+        <form id="new-quest-form">
+          <div class="modal-body">
+            <div id="create-quest-error" class="text-danger" style="display:none;"></div>
+
+            <div class="field">
+              <label for="quest-title">Title</label>
+              <input id="quest-title" name="title" required maxlength="120">
+            </div>
+
+            <div class="field">
+              <label for="quest-description">Description</label>
+              <textarea id="quest-description" name="description" required></textarea>
+            </div>
+
+            <div class="field">
+              <label for="quest-kind">Kind</label>
+              <select id="quest-kind" name="kind">
+                <option value="once">One-time</option>
+                <option value="recurring">Recurring</option>
+              </select>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+              <div class="field" style="flex:1;">
+                <label for="quest-xp">XP reward</label>
+                <input id="quest-xp" name="xp_reward" type="number" value="10" min="0">
+              </div>
+              <div class="field" style="flex:1;">
+                <label for="quest-coins">Coin reward</label>
+                <input id="quest-coins" name="coin_reward" type="number" value="1" min="0">
+              </div>
+            </div>
+
+            {# You can later expand this with repeat settings etc. #}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn" id="cancel-create-quest">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create quest</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const openBtn = document.getElementById('open-create-quest');
+        const modal = document.getElementById('create-quest-modal');
+        const closeBtn = document.getElementById('close-create-quest');
+        const cancelBtn = document.getElementById('cancel-create-quest');
+        const form = document.getElementById('new-quest-form');
+        const errorBox = document.getElementById('create-quest-error');
+
+        if (!openBtn || !modal || !form) return;
+
+        function openModal() {
+          modal.classList.add('open');
+          modal.setAttribute('aria-hidden', 'false');
+          errorBox.style.display = 'none';
+          errorBox.textContent = '';
+          // focus first field
+          const titleInput = document.getElementById('quest-title');
+          if (titleInput) titleInput.focus();
+        }
+
+        function closeModal() {
+          modal.classList.remove('open');
+          modal.setAttribute('aria-hidden', 'true');
+        }
+
+        openBtn.addEventListener('click', function () {
+          openModal();
+        });
+
+        [closeBtn, cancelBtn].forEach(function (btn) {
+          if (!btn) return;
+          btn.addEventListener('click', function () {
+            closeModal();
+          });
+        });
+
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) {
+            closeModal();
+          }
+        });
+
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && modal.classList.contains('open')) {
+            closeModal();
+          }
+        });
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          errorBox.style.display = 'none';
+          errorBox.textContent = '';
+
+          const data = new FormData(form);
+
+          const payload = {
+            title: data.get('title'),
+            description: data.get('description'),
+            kind: data.get('kind'),              // "once" | "recurring"
+            xp_reward: Number(data.get('xp_reward')) || 0,
+            coin_reward: Number(data.get('coin_reward')) || 0,
+            repeat_unit: null,
+            repeat_interval: null,
+            anchor_date: null,
+            start_date: null,
+            end_date: null,
+            start_at: null,
+            due_at: null,
+            due_time: null,
+            timezone: null,
+          };
+
+          try {
+            const res = await fetch('/quests', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            if (res.ok) {
+              form.reset();
+              closeModal();
+              // reload to show the new quest
+              location.reload();
+            } else {
+              const text = await res.text();
+              errorBox.textContent = 'Failed to create quest (' + res.status + ').';
+              errorBox.style.display = 'block';
+              console.error('Quest creation failed', res.status, text);
+            }
+          } catch (err) {
+            console.error(err);
+            errorBox.textContent = 'Network error while creating quest.';
+            errorBox.style.display = 'block';
+          }
+        });
+      })();
+    </script>
+
+  {% else %}
+    <div class="card">
+      <h1>Welcome to Questboard</h1>
+      <p>Sign in to start tracking your quests, gaining XP, and earning coins.</p>
+      <p class="subtitle">
+        Click “Continue with Google” in the header to get started.
+      </p>
+    </div>
+  {% endif %}
+{% endblock %}

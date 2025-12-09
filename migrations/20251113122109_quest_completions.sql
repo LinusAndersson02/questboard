@@ -4,6 +4,8 @@ CREATE TABLE quest_completions (
     period_start        DATE NOT NULL,
     period_end          DATE NOT NULL,
     completed_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+xp_reward INTEGER NOT NULL DEFAULT 0,
+coin_reward INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT uq_quest_period UNIQUE (quest_id, period_start, period_end)
 );

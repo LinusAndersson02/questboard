@@ -1,6 +1,7 @@
 use axum_login::{AuthUser, AuthnBackend, UserId};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Date;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -9,6 +10,13 @@ pub struct User {
     pub email: String,
     pub name: Option<String>,
     pub avatar: Option<String>,
+
+    pub xp_total: i64,
+    pub coins: i64,
+    pub current_streak: i32,
+    pub longest_streak: i32,
+    pub last_active_date: Option<Date>,
+    pub timezone: String,
 
     pub session_key: String,
 }
@@ -52,6 +60,12 @@ impl AuthnBackend for DbBackend {
             email           AS "email!",
             name,
             avatar_url      AS "avatar?",
+            xp_total        AS "xp_total!",
+            coins           AS "coins!",
+            current_streak  AS "current_streak!",
+            longest_streak  AS "longest_streak!",
+            last_active_date AS "last_active_date?",
+            timezone        AS "timezone!",
             google_sub      AS "session_key!"
         FROM users
         WHERE id = $1

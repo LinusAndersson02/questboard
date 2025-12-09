@@ -1,15 +1,9 @@
 use crate::models::{
-    Quest,
-    QuestCompletion,
-    QuestKind,
-    RepeatUnit,
-    CreateQuestInput,
-    UpdateQuestInput,
+    CreateQuestInput, Quest, QuestCompletion, QuestKind, RepeatUnit, UpdateQuestInput,
 };
 use sqlx::PgPool;
 use time::{Date, Duration, OffsetDateTime};
 use uuid::Uuid;
-
 
 pub async fn list_quests_for_user(
     pool: &PgPool,
@@ -24,6 +18,8 @@ pub async fn list_quests_for_user(
             title,
             description,
             kind as "kind: _",
+            xp_reward,
+            coin_reward,
             repeat_unit as "repeat_unit: _",
             repeat_interval,
             anchor_date,
@@ -60,6 +56,8 @@ pub async fn get_quest_by_id(
             title,
             description,
             kind as "kind: _",
+            xp_reward,
+            coin_reward,
             repeat_unit as "repeat_unit: _",
             repeat_interval,
             anchor_date,
@@ -88,6 +86,8 @@ pub async fn create_quest(
     input: CreateQuestInput,
 ) -> Result<Quest, sqlx::Error> {
     let timezone = input.timezone.unwrap_or_else(|| "UTC".to_string());
+    let xp_reward = input.xp_reward.unwrap_or(10);
+    let coin_reward = input.coin_reward.unwrap_or(1);
 
     sqlx::query_as!(
         Quest,
@@ -97,6 +97,8 @@ pub async fn create_quest(
             title,
             description,
             kind,
+            xp_reward,
+            coin_reward,
             repeat_unit,
             repeat_interval,
             anchor_date,
@@ -107,13 +109,15 @@ pub async fn create_quest(
             due_time,
             timezone
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
         RETURNING
             id,
             user_id,
             title,
             description,
             kind as "kind: _",
+            xp_reward,
+            coin_reward,
             repeat_unit as "repeat_unit: _",
             repeat_interval,
             anchor_date,
@@ -131,6 +135,8 @@ pub async fn create_quest(
         input.title,
         input.description,
         input.kind as QuestKind,
+        xp_reward,
+        coin_reward,
         input.repeat_unit as Option<RepeatUnit>,
         input.repeat_interval,
         input.anchor_date,
@@ -192,62 +198,75 @@ pub async fn update_quest(
     if let Some(timezone) = input.timezone {
         quest.timezone = timezone;
     }
+    if let Some(xp_reward) = input.xp_reward {
+    quest.xp_reward = xp_reward;
+}
+if let Some(coin_reward) = input.coin_reward {
+    quest.coin_reward = coin_reward;
+}
+
 
     let updated = sqlx::query_as!(
-        Quest,
-        r#"
-        UPDATE quests
-        SET
-            title = $3,
-            description = $4,
-            kind = $5,
-            repeat_unit = $6,
-            repeat_interval = $7,
-            anchor_date = $8,
-            start_date = $9,
-            end_date = $10,
-            start_at = $11,
-            due_at = $12,
-            due_time = $13,
-            timezone = $14,
-            updated_at = now()
-        WHERE id = $1 AND user_id = $2
-        RETURNING
-            id,
-            user_id,
-            title,
-            description,
-            kind as "kind: _",
-            repeat_unit as "repeat_unit: _",
-            repeat_interval,
-            anchor_date,
-            start_date,
-            end_date,
-            start_at,
-            due_at,
-            due_time,
-            timezone,
-            is_active,
-            created_at,
-            updated_at
-        "#,
-        quest.id,
-        quest.user_id,
-        quest.title,
-        quest.description,
-        quest.kind as QuestKind,
-        quest.repeat_unit as Option<RepeatUnit>,
-        quest.repeat_interval,
-        quest.anchor_date,
-        quest.start_date,
-        quest.end_date,
-        quest.start_at,
-        quest.due_at,
-        quest.due_time,
-        quest.timezone,
-    )
-    .fetch_optional(pool)
-    .await?;
+    Quest,
+    r#"
+    UPDATE quests
+    SET
+        title = $3,
+        description = $4,
+        kind = $5,
+        xp_reward = $6,
+        coin_reward = $7,
+        repeat_unit = $8,
+        repeat_interval = $9,
+        anchor_date = $10,
+        start_date = $11,
+        end_date = $12,
+        start_at = $13,
+        due_at = $14,
+        due_time = $15,
+        timezone = $16,
+        updated_at = now()
+    WHERE id = $1 AND user_id = $2
+    RETURNING
+        id,
+        user_id,
+        title,
+        description,
+        kind as "kind: _",
+        xp_reward,
+        coin_reward,
+        repeat_unit as "repeat_unit: _",
+        repeat_interval,
+        anchor_date,
+        start_date,
+        end_date,
+        start_at,
+        due_at,
+        due_time,
+        timezone,
+        is_active,
+        created_at,
+        updated_at
+    "#,
+    quest.id,
+    quest.user_id,
+    quest.title,
+    quest.description,
+    quest.kind as QuestKind,
+    quest.xp_reward,
+    quest.coin_reward,
+    quest.repeat_unit as Option<RepeatUnit>,
+    quest.repeat_interval,
+    quest.anchor_date,
+    quest.start_date,
+    quest.end_date,
+    quest.start_at,
+    quest.due_at,
+    quest.due_time,
+    quest.timezone,
+)
+.fetch_optional(pool)
+.await?;
 
     Ok(updated)
 }
@@ -271,11 +290,7 @@ pub async fn delete_quest(
     Ok(res.rows_affected() == 1)
 }
 
-
-pub fn current_period_for_quest(
-    quest: &Quest,
-    now: OffsetDateTime,
-) -> Option<(Date, Date)> {
+pub fn current_period_for_quest(quest: &Quest, now: OffsetDateTime) -> Option<(Date, Date)> {
     match quest.kind {
         QuestKind::Once => {
             let start = quest.start_at?.date();
@@ -331,31 +346,39 @@ pub async fn complete_quest_for_current_period(
     quest: &Quest,
     now: OffsetDateTime,
 ) -> Result<Option<QuestCompletion>, sqlx::Error> {
-    let Some((period_start, period_end)) = current_period_for_quest(quest, now) else {
-        return Ok(None);
-    };
 
-    let completion = sqlx::query_as!(
-        QuestCompletion,
-        r#"
-        INSERT INTO quest_completions (quest_id, period_start, period_end)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (quest_id, period_start, period_end)
-        DO UPDATE SET completed_at = now()
-        RETURNING
-            id,
-            quest_id,
+        let Some((period_start, period_end)) = current_period_for_quest(quest, now) else {
+            return Ok(None);
+        };
+
+
+        let completion = sqlx::query_as!(
+            QuestCompletion,
+            r#"
+            INSERT INTO quest_completions (quest_id, period_start, period_end, xp_reward, coin_reward)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (quest_id, period_start, period_end)
+            DO UPDATE SET completed_at = now()
+            RETURNING
+                id,
+                quest_id,
+                period_start,
+                xp_reward,
+                coin_reward,
+                period_end,
+                completed_at
+            "#,
+            quest.id,
             period_start,
             period_end,
-            completed_at
-        "#,
-        quest.id,
-        period_start,
-        period_end,
-    )
-    .fetch_one(pool)
-    .await?;
+            quest.xp_reward,
+            quest.coin_reward,
+            )
+            .fetch_optional(pool)
+            .await?;
 
-    Ok(Some(completion))
-}
 
+    Ok(completion)
+
+
+   }

@@ -1,10 +1,11 @@
 use serde::Deserialize;
+use serde::Serialize;
 use sqlx::FromRow;
 use sqlx::Type;
 use time::{Date, OffsetDateTime, Time};
 use uuid::Uuid;
-use serde::Serialize;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 #[sqlx(type_name = "quest_kind", rename_all = "lowercase")]
 pub enum QuestKind {
     Once,
@@ -12,6 +13,7 @@ pub enum QuestKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Type, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 #[sqlx(type_name = "repeat_unit", rename_all = "lowercase")]
 pub enum RepeatUnit {
     Day,
@@ -27,6 +29,9 @@ pub struct Quest {
     pub description: String,
 
     pub kind: QuestKind,
+
+    pub xp_reward: i32,
+    pub coin_reward: i32,
 
     pub repeat_unit: Option<RepeatUnit>,
     pub repeat_interval: Option<i32>,
@@ -51,6 +56,8 @@ pub struct QuestCompletion {
     pub quest_id: Uuid,
     pub period_start: Date,
     pub period_end: Date,
+    pub xp_reward: i32,
+    pub coin_reward: i32,
     pub completed_at: OffsetDateTime,
 }
 
@@ -60,6 +67,8 @@ pub struct CreateQuestInput {
     pub description: String,
 
     pub kind: QuestKind,
+    pub xp_reward: Option<i32>,
+    pub coin_reward: Option<i32>,
 
     pub repeat_unit: Option<RepeatUnit>,
     pub repeat_interval: Option<i32>,
@@ -80,6 +89,8 @@ pub struct UpdateQuestInput {
     pub description: Option<String>,
 
     pub kind: Option<QuestKind>,
+    pub xp_reward: Option<i32>,
+    pub coin_reward: Option<i32>,
 
     pub repeat_unit: Option<RepeatUnit>,
     pub repeat_interval: Option<i32>,

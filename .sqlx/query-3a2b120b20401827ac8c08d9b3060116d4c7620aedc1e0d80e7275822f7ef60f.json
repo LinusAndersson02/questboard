@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id              AS \"id!: Uuid\",\n            email           AS \"email!\",\n            name,\n            avatar_url      AS \"avatar?\",\n            google_sub      AS \"session_key!\"\n        FROM users\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: Uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "email!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "avatar?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "session_key!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "3a2b120b20401827ac8c08d9b3060116d4c7620aedc1e0d80e7275822f7ef60f"
+}
