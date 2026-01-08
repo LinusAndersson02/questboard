@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if user %}
+    <div class="layout">
+      <!-- LEFT: feed -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2>Today’s quests</h2>
+            <small>Things you said you’d keep up with.</small>
+          </div>
+          <span class="chip">
+            <span class="chip-dot"></span>
+            {{ quests|length }} active
+          </span>
+        </div>
+
+        {% if quests and quests|length > 0 %}
+          <ul class="feed-list">
+            {% for quest in quests %}
+              <li class="feed-item">
+                <div class="feed-item-title">
+                  <span>{{ quest.title }}</span>
+                  <span class="badge-soft">Active</span>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="muted">
+            You don’t have any quests yet.
+            <a href="/quests">Create your first quest</a> to start building streaks.
+          </p>
+        {% endif %}
+      </section>
+
+      <!-- RIGHT: sidebar -->
+      <aside class="card">
+        <div class="sidebar-section">
+          <div class="card-header">
+            <div>
+              <h2>Welcome back, {{ user.name or user.email }}</h2>
+              <small class="tagline">Stay consistent with the habits that matter.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h3 style="margin:0;font-size:14px;">Today at a glance</h3>
+          <ul class="sidebar-list">
+            <li>
+              <span>Active quests</span>
+              <span>{{ quests|length }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="sidebar-section">
+          <h3 style="margin:0;font-size:14px;">Quick actions</h3>
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
+            <a href="/quests" class="btn btn-secondary" style="justify-content:center;">View all quests</a>
+            <a href="/account" class="btn btn-secondary" style="justify-content:center;">Account settings</a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  {% else %}
+    <!-- Logged-out hero -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Welcome to Questboard</h2>
+          <small>Turn your habits into tiny repeatable quests.</small>
+        </div>
+      </div>
+      <p class="muted">
+        Sign in with Google to start tracking recurring tasks and celebrate your streaks.
+      </p>
+      <p>
+        <a class="btn" href="/auth/google/start">Continue with Google</a>
+      </p>
+    </section>
+  {% endif %}
+{% endblock %}
+

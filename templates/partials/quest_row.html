@@ -1,0 +1,53 @@
+<li id="quest-{{ q.id }}" class="quest-card">
+  <div class="quest-main">
+    <p class="quest-title">{{ q.title }}</p>
+    <p class="quest-desc">{{ q.description }}</p>
+
+    <div class="quest-meta">
+      <span>
+        {% if q.kind == "recurring" %}
+          <span class="badge badge-recurring">Recurring</span>
+        {% else %}
+          <span class="badge badge-once">One-time</span>
+        {% endif %}
+      </span>
+
+      {% if completed %}
+        <span class="badge badge-done">Completed</span>
+      {% endif %}
+
+      <span>XP {{ q.xp_reward }} • {{ q.coin_reward }}</span>
+    </div>
+  </div>
+
+  <div class="quest-actions">
+    {% if completed %}
+      <button type="button" class="btn btn-ghost" disabled style="font-size:13px;padding-inline:10px;">
+        Done
+      </button>
+    {% else %}
+      <button type="button" class="btn btn-primary" style="font-size:13px;padding-inline:10px;"
+              hx-post="/ui/quests/{{ q.id }}/complete"
+              hx-target="#quest-{{ q.id }}"
+              hx-swap="outerHTML">
+        Complete
+      </button>
+    {% endif %}
+
+    <button type="button" class="btn btn-ghost" style="font-size:12px;padding-inline:10px;"
+            hx-get="/ui/quests/{{ q.id }}/edit"
+            hx-target="#modal-root"
+            hx-swap="innerHTML">
+      Edit
+    </button>
+
+    <button type="button" class="btn btn-ghost" style="font-size:12px;padding-inline:10px;"
+            hx-delete="/ui/quests/{{ q.id }}"
+            hx-target="#quest-{{ q.id }}"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this quest?">
+      Delete
+    </button>
+  </div>
+</li>
+

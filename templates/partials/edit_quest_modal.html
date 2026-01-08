@@ -1,0 +1,64 @@
+<div class="modal-backdrop"
+     hx-trigger="keyup[Escape] from:body"
+     hx-get="/ui/modal/close"
+     hx-target="#modal-root"
+     hx-swap="innerHTML">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <h2 id="modal-title" class="modal-title">Edit quest</h2>
+
+      <button type="button" class="btn btn-ghost" aria-label="Close"
+              hx-get="/ui/modal/close"
+              hx-target="#modal-root"
+              hx-swap="innerHTML">
+        ✕
+      </button>
+    </div>
+
+    <form hx-put="/ui/quests/{{ q.id }}"
+          hx-target="#quest-{{ q.id }}"
+          hx-swap="outerHTML">
+      <div class="modal-body">
+        <div class="field">
+          <label for="quest-title">Title</label>
+          <input id="quest-title" name="title" required maxlength="120" value="{{ q.title }}" autofocus>
+        </div>
+
+        <div class="field">
+          <label for="quest-description">Description</label>
+          <textarea id="quest-description" name="description" required>{{ q.description }}</textarea>
+        </div>
+
+        <div class="field">
+          <label for="quest-kind">Kind</label>
+          <select id="quest-kind" name="kind">
+            <option value="once" {% if q.kind == "once" %}selected{% endif %}>One-time</option>
+            <option value="recurring" {% if q.kind == "recurring" %}selected{% endif %}>Recurring</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+          <div class="field" style="flex:1;">
+            <label for="quest-xp">XP reward</label>
+            <input id="quest-xp" name="xp_reward" type="number" min="0" value="{{ q.xp_reward }}">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="quest-coins">Coin reward</label>
+            <input id="quest-coins" name="coin_reward" type="number" min="0" value="{{ q.coin_reward }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn"
+                hx-get="/ui/modal/close"
+                hx-target="#modal-root"
+                hx-swap="innerHTML">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Your quests</h1>
+
+  {% if not user %}
+    <p>You need to be signed in to see your quests.</p>
+  {% else %}
+    {% if quests and quests|length > 0 %}
+      <ul>
+        {% for quest in quests %}
+          <li>
+            <strong>{{ quest.title }}</strong>
+            {% if quest.description %}
+              <br>
+              <small>{{ quest.description }}</small>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>You don't have any quests yet.</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+

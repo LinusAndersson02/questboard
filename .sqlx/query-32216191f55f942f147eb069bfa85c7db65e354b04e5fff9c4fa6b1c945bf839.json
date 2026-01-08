@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            id              AS \"id!: Uuid\",\n            email           AS \"email!\",\n            name,\n            avatar_url      AS \"avatar?\",\n            xp_total        AS \"xp_total!\",\n            coins           AS \"coins!\",\n            current_streak  AS \"current_streak!\",\n            longest_streak  AS \"longest_streak!\",\n            last_active_date AS \"last_active_date?\",\n            timezone        AS \"timezone!\",\n            google_sub      AS \"session_key!\"\n        FROM users\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: Uuid",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "email!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "avatar?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "xp_total!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "coins!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "current_streak!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "longest_streak!",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "last_active_date?",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 9,
+        "name": "timezone!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "session_key!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "32216191f55f942f147eb069bfa85c7db65e354b04e5fff9c4fa6b1c945bf839"
+}

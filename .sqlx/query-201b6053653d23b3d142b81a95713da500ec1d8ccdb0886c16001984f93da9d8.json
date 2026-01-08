@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            xp_total,\n            coins,\n            current_streak,\n            longest_streak,\n            last_active_date,\n            timezone\n        FROM users\n        WHERE id = $1\n        FOR UPDATE\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "xp_total",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "coins",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "current_streak",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "longest_streak",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_active_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 5,
+        "name": "timezone",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "201b6053653d23b3d142b81a95713da500ec1d8ccdb0886c16001984f93da9d8"
+}

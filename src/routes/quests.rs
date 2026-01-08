@@ -7,9 +7,10 @@ use axum::{
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::services::quest_service::CompleteQuestOutcome;
 use crate::{
     auth::AuthSession,
-    models::{CreateQuestInput, Quest, QuestCompletion, UpdateQuestInput},
+    models::{CreateQuestInput, Quest,  UpdateQuestInput},
     routes::AppState,
     services::quest_service,
 };
@@ -128,7 +129,7 @@ pub async fn complete_quest(
     State(state): State<AppState>,
     auth: AuthSession,
     Path(id): Path<Uuid>,
-) -> Result<Json<QuestCompletion>, StatusCode> {
+) -> Result<Json<CompleteQuestOutcome>, StatusCode> {
     let user = match auth.user {
         Some(ref u) => u,
         None => return Err(StatusCode::UNAUTHORIZED),
@@ -145,12 +146,13 @@ pub async fn complete_quest(
 
     let now = OffsetDateTime::now_utc();
 
-    let completion = quest_service::complete_quest_for_current_period(&state.db_pool, &quest, now)
+    let result = quest_service::complete_quest_and_reward(&state.db_pool, user.id, &quest, now)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    match completion {
-        Some(c) => Ok(Json(c)),
-        None => Err(StatusCode::BAD_REQUEST), // not active in current period
+    match result {
+        quest_service::CompleteQuestResult::Completed(outcome) => Ok(Json(outcome)),
+        quest_service::CompleteQuestResult::AlreadyCompleted => Err(StatusCode::CONFLICT),
+        quest_service::CompleteQuestResult::NotActive => Err(StatusCode::BAD_REQUEST),
     }
 }

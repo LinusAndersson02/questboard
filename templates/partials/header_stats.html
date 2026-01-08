@@ -1,0 +1,18 @@
+<div id="header-stats" class="header-stats" hx-swap-oob="outerHTML">
+  {% if level %}
+    <div class="level-wrap" title="Level progress">
+      <div class="level-circle">L{{ level.level }}</div>
+      <div class="level-meter">
+        <progress value="{{ level.into_level }}" max="{{ level.needed_for_next }}"></progress>
+        <div class="meta">{{ level.into_level }} / {{ level.needed_for_next }} XP</div>
+      </div>
+    </div>
+  {% endif %}
+
+  <span class="pill pill-streak">🔥 {{ streak_display }} day streak</span>
+  <span class="pill pill-coins">💰 {{ user.coins }}</span>
+
+  <a class="btn btn-ghost" href="/account">Account</a>
+  <a class="btn" href="/logout">Logout</a>
+</div>
+

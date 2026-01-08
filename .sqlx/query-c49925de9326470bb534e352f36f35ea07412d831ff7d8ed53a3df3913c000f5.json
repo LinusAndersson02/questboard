@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            user_id,\n            title,\n            description,\n            kind as \"kind: _\",\n            repeat_unit as \"repeat_unit: _\",\n            repeat_interval,\n            anchor_date,\n            start_date,\n            end_date,\n            start_at,\n            due_at,\n            due_time,\n            timezone,\n            is_active,\n            created_at,\n            updated_at\n        FROM quests\n        WHERE id = $1 AND user_id = $2\n        ",
+  "query": "\n        INSERT INTO quests (\n            user_id,\n            title,\n            description,\n            kind,\n            xp_reward,\n            coin_reward,\n            repeat_unit,\n            repeat_interval,\n            anchor_date,\n            start_date,\n            end_date,\n            start_at,\n            due_at,\n            due_time,\n            timezone\n        )\n        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)\n        RETURNING\n            id,\n            user_id,\n            title,\n            description,\n            kind as \"kind: _\",\n            xp_reward,\n            coin_reward,\n            repeat_unit as \"repeat_unit: _\",\n            repeat_interval,\n            anchor_date,\n            start_date,\n            end_date,\n            start_at,\n            due_at,\n            due_time,\n            timezone,\n            is_active,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -40,6 +40,16 @@
       },
       {
         "ordinal": 5,
+        "name": "xp_reward",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "coin_reward",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
         "name": "repeat_unit: _",
         "type_info": {
           "Custom": {
@@ -54,57 +64,57 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 8,
         "name": "repeat_interval",
         "type_info": "Int4"
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "anchor_date",
         "type_info": "Date"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "start_date",
         "type_info": "Date"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "end_date",
         "type_info": "Date"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "start_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "due_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "due_time",
         "type_info": "Time"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "timezone",
         "type_info": "Text"
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "is_active",
         "type_info": "Bool"
       },
       {
-        "ordinal": 15,
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 16,
+        "ordinal": 18,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -112,10 +122,45 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Text",
+        "Text",
+        {
+          "Custom": {
+            "name": "quest_kind",
+            "kind": {
+              "Enum": [
+                "once",
+                "recurring"
+              ]
+            }
+          }
+        },
+        "Int4",
+        "Int4",
+        {
+          "Custom": {
+            "name": "repeat_unit",
+            "kind": {
+              "Enum": [
+                "day",
+                "week"
+              ]
+            }
+          }
+        },
+        "Int4",
+        "Date",
+        "Date",
+        "Date",
+        "Timestamptz",
+        "Timestamptz",
+        "Time",
+        "Text"
       ]
     },
     "nullable": [
+      false,
+      false,
       false,
       false,
       false,
@@ -135,5 +180,5 @@
       false
     ]
   },
-  "hash": "9dbdab34a73480ede2940ad7eedc577861f5d014f5b1f31a6dbb19100e8a8ccc"
+  "hash": "c49925de9326470bb534e352f36f35ea07412d831ff7d8ed53a3df3913c000f5"
 }

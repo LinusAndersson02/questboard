@@ -1,23 +1,24 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>{{ title or "Questboard" }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <style>
     :root {
       --bg: #fafafa;
       --card-bg: #ffffff;
-      --border: #e2e2e2;
+      --border: rgba(148, 163, 184, 0.45);
+      --border-strong: rgba(148, 163, 184, 0.75);
       --accent: #4f46e5;
       --accent-soft: #eef2ff;
       --accent-text: #312e81;
       --text: #111827;
       --muted: #6b7280;
       --danger: #b91c1c;
-      --radius: 10px;
-      --shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      --radius: 12px;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
     }
 
     * { box-sizing: border-box; }
@@ -31,7 +32,7 @@
     }
 
     header, main {
-      max-width: 960px;
+      max-width: 1260px;
       margin: 0 auto;
       padding: 16px;
     }
@@ -39,18 +40,24 @@
     header {
       display: flex;
       align-items: center;
-      gap: 12px;
       justify-content: space-between;
+      gap: 16px;
     }
 
+    main {
+      padding: 24px 16px 40px;
+    }
+
+    /* App title */
     .app-title {
       display: flex;
       flex-direction: column;
       gap: 4px;
+      min-width: 160px;
     }
 
     .app-title-main {
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.03em;
     }
 
@@ -59,6 +66,7 @@
       color: var(--muted);
     }
 
+    /* Buttons / nav */
     nav a, button, .btn {
       padding: 8px 14px;
       border-radius: 999px;
@@ -71,7 +79,11 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      line-height: 1;
     }
+
+    .btn:hover { filter: brightness(0.98); }
+    button:active, .btn:active { transform: translateY(1px); }
 
     .btn-primary {
       border-color: var(--accent);
@@ -83,28 +95,124 @@
       background: transparent;
     }
 
+    button[disabled], .btn[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
     img.avatar {
       width: 28px;
       height: 28px;
       border-radius: 50%;
       vertical-align: middle;
       object-fit: cover;
+      border: 1px solid rgba(148, 163, 184, 0.6);
     }
 
     .right {
       display: flex;
-      gap: 10px;
       align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
-    main {
-      padding: 24px 16px 40px;
+    .user-name {
+      font-size: 14px;
+      color: var(--text);
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
+    .header-stats {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .level-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: #fff;
+    }
+
+    .level-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      font-weight: 900;
+      font-size: 13px;
+      flex: 0 0 auto;
+    }
+
+    .level-meter {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 210px;
+    }
+
+    .level-meter progress {
+      width: 230px;
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .level-meter progress::-webkit-progress-bar {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 999px;
+    }
+
+    .level-meter progress::-webkit-progress-value {
+      background: var(--accent);
+      border-radius: 999px;
+    }
+
+    .level-meter progress::-moz-progress-bar {
+      background: var(--accent);
+      border-radius: 999px;
+    }
+
+    .level-meter .meta {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Pills */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      border: 1px solid var(--border-strong);
+      background: #fff;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    /* Generic content card */
     .card {
       background: var(--card-bg);
       border-radius: var(--radius);
-      border: 1px solid rgba(148, 163, 184, 0.3);
+      border: 1px solid rgba(148, 163, 184, 0.35);
       box-shadow: var(--shadow);
       padding: 20px;
     }
@@ -119,28 +227,12 @@
 
     .card-title {
       font-size: 20px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .subtitle {
       font-size: 14px;
       color: var(--muted);
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      background: var(--accent-soft);
-      color: var(--accent-text);
-    }
-
-    .pill small {
-      font-size: 11px;
-      opacity: 0.75;
     }
 
     /* Quest list */
@@ -155,7 +247,7 @@
 
     .quest-card {
       padding: 12px 14px;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid rgba(148, 163, 184, 0.5);
       background: #ffffff;
       display: grid;
@@ -170,7 +262,7 @@
 
     .quest-title {
       font-size: 15px;
-      font-weight: 500;
+      font-weight: 600;
       margin: 0 0 2px;
     }
 
@@ -186,6 +278,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      align-items: center;
     }
 
     .quest-actions {
@@ -218,26 +311,28 @@
       background: #fff7ed;
     }
 
+    .badge-done {
+      border-color: rgba(79, 70, 229, 0.45);
+      color: var(--accent-text);
+      background: var(--accent-soft);
+    }
+
     /* Modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.35);
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       padding: 16px;
       z-index: 50;
     }
 
-    .modal-backdrop.open {
-      display: flex;
-    }
-
     .modal {
       background: #ffffff;
       border-radius: 16px;
-      max-width: 480px;
+      max-width: 520px;
       width: 100%;
       padding: 20px 20px 16px;
       box-shadow: var(--shadow);
@@ -249,11 +344,12 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 12px;
+      gap: 10px;
     }
 
     .modal-title {
       font-size: 18px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .modal-body {
@@ -278,17 +374,25 @@
 
     .field label {
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     .field input,
     .field textarea,
     .field select {
       font: inherit;
-      padding: 7px 9px;
-      border-radius: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
       border: 1px solid rgba(148, 163, 184, 0.9);
       background: #ffffff;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: rgba(79, 70, 229, 0.75);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
     }
 
     .field textarea {
@@ -301,41 +405,67 @@
       font-size: 13px;
     }
 
+    /* Responsive */
     @media (max-width: 600px) {
-      header, main {
-        padding-inline: 12px;
-      }
-
       header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
       }
 
       .right {
-        align-self: stretch;
-        justify-content: space-between;
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .user-name {
+        max-width: 100%;
+      }
+
+      .level-meter {
+        min-width: 170px;
+      }
+
+      .level-meter progress {
+        width: 200px;
       }
     }
   </style>
+
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
+
 <body>
   <header>
     <div class="app-title">
       <div class="app-title-main">Questboard</div>
       <div class="app-title-sub">v{{ version }}</div>
     </div>
+
     <nav class="right">
       {% if user %}
         {% if user.avatar %}
           <img class="avatar" src="{{ user.avatar }}" alt="avatar">
         {% endif %}
-        <span>{{ user.name or user.email }}</span>
-        <span class="pill">
-          XP {{ user.xp_total }} • 💰 {{ user.coins }}
-        </span>
-        <a class="btn btn-ghost" href="/account">Account</a>
-        <a class="btn" href="/logout">Logout</a>
+
+        <span class="user-name">{{ user.name or user.email }}</span>
+
+        <div id="header-stats" class="header-stats">
+          {% if level %}
+            <div class="level-wrap" title="Level progress">
+              <div class="level-circle">L{{ level.level }}</div>
+              <div class="level-meter">
+                <progress value="{{ level.into_level }}" max="{{ level.needed_for_next }}"></progress>
+                <div class="meta">{{ level.into_level }} / {{ level.needed_for_next }} XP</div>
+              </div>
+            </div>
+          {% endif %}
+
+          <span class="pill pill-streak">🔥 {{ streak_display }} day streak</span>
+          <span class="pill pill-coins">💰 {{ user.coins }}</span>
+
+          <a class="btn btn-ghost" href="/account">Account</a>
+          <a class="btn" href="/logout">Logout</a>
+        </div>
       {% else %}
         <a id="google-login" class="btn btn-primary" href="/auth/google/start">Continue with Google</a>
         <noscript><a class="btn" href="/auth/google/start?return_url=/">Login</a></noscript>
@@ -343,16 +473,16 @@
           (function(){
             var u = location.pathname + location.search + location.hash;
             var el = document.getElementById('google-login');
-            if (el) {
-              el.href = "/auth/google/start?return_url=" + encodeURIComponent(u || "/");
-            }
+            if (el) el.href = "/auth/google/start?return_url=" + encodeURIComponent(u || "/");
           })();
         </script>
       {% endif %}
     </nav>
   </header>
+
   <main>
     {% block content %}{% endblock %}
+    <div id="modal-root"></div>
   </main>
 </body>
 </html>
