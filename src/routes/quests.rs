@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::services::quest_service::CompleteQuestOutcome;
 use crate::{
     auth::AuthSession,
-    models::{CreateQuestInput, Quest,  UpdateQuestInput},
+    models::{CreateQuestInput, Quest, QuestWithStatus, UpdateQuestInput},
     routes::AppState,
     services::quest_service,
 };
@@ -33,13 +33,11 @@ pub fn quests_router() -> Router<AppState> {
 pub async fn list_quests(
     State(state): State<AppState>,
     auth: AuthSession,
-) -> Result<Json<Vec<Quest>>, StatusCode> {
-    let user = match auth.user {
-        Some(ref u) => u,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
+) -> Result<Json<Vec<QuestWithStatus>>, StatusCode> {
+    let user = auth.user.as_ref().ok_or(StatusCode::UNAUTHORIZED)?;
+    let now = OffsetDateTime::now_utc();
 
-    let quests = quest_service::list_quests_for_user(&state.db_pool, user.id)
+    let quests = quest_service::list_quests_for_user(&state.db_pool, user.id, now)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -50,13 +48,11 @@ pub async fn get_quest(
     State(state): State<AppState>,
     auth: AuthSession,
     Path(id): Path<Uuid>,
-) -> Result<Json<Quest>, StatusCode> {
-    let user = match auth.user {
-        Some(ref u) => u,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
+) -> Result<Json<QuestWithStatus>, StatusCode> {
+    let user = auth.user.as_ref().ok_or(StatusCode::UNAUTHORIZED)?;
+    let now = OffsetDateTime::now_utc();
 
-    let quest = quest_service::get_quest_by_id(&state.db_pool, user.id, id)
+    let quest = quest_service::get_quest_by_id_with_status(&state.db_pool, user.id, id, now)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

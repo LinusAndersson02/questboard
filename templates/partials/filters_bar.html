@@ -1,0 +1,44 @@
+<div class="filters" style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px;">
+  <a class="btn btn-ghost"
+     hx-get="/ui/quests/list?filter=all"
+     hx-target="#quests-list"
+     hx-swap="innerHTML">
+    All
+  </a>
+
+  <a class="btn btn-ghost"
+     hx-get="/ui/quests/list?filter=today"
+     hx-target="#quests-list"
+     hx-swap="innerHTML">
+    Today
+  </a>
+
+  <a class="btn btn-ghost"
+     hx-get="/ui/quests/list?filter=week"
+     hx-target="#quests-list"
+     hx-swap="innerHTML">
+    This week
+  </a>
+
+  <a class="btn btn-ghost"
+     hx-get="/ui/quests/list?filter=month"
+     hx-target="#quests-list"
+     hx-swap="innerHTML">
+    This month
+  </a>
+
+  <a class="btn btn-ghost"
+     hx-get="/ui/quests/list?filter=recurring"
+     hx-target="#quests-list"
+     hx-swap="innerHTML">
+    Recurring
+  </a>
+
+  <a class="btn btn-ghost"
+     hx-get="/ui/quests/list?filter=once"
+     hx-target="#quests-list"
+     hx-swap="innerHTML">
+    One-time
+  </a>
+</div>
+

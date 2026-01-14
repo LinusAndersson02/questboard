@@ -12,6 +12,10 @@
         {% endif %}
       </span>
 
+      {% if due and not completed %}
+        <span class="badge">Due</span>
+      {% endif %}
+
       {% if completed %}
         <span class="badge badge-done">Completed</span>
       {% endif %}

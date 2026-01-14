@@ -15,8 +15,8 @@
       </button>
     </div>
 
-    <form hx-put="/ui/quests/{{ q.id }}"
-          hx-target="#quest-{{ q.id }}"
+    <form hx-put="/ui/quests/{{ q.id }}?scope={{ scope }}&kind={{ kind }}&state={{ state }}"
+          hx-target="#quests-panel"
           hx-swap="outerHTML">
       <div class="modal-body">
         <div class="field">
@@ -47,6 +47,128 @@
             <input id="quest-coins" name="coin_reward" type="number" min="0" value="{{ q.coin_reward }}">
           </div>
         </div>
+
+        <hr style="border:none;border-top:1px solid rgba(148,163,184,0.35);margin:10px 0;">
+
+        <div id="once-fields">
+          <div class="subtitle" style="margin-bottom:4px;">One-time scheduling</div>
+          <div style="display:flex; gap:10px;">
+            <div class="field" style="flex:1;">
+              <label for="once-start-date">Start date</label>
+              <input id="once-start-date" name="once_start_date" type="date" value="{{ once_start_date or '' }}">
+            </div>
+            <div class="field" style="flex:1;">
+              <label for="once-due-date">Due date</label>
+              <input id="once-due-date" name="once_due_date" type="date" value="{{ once_due_date or '' }}">
+            </div>
+          </div>
+        </div>
+
+        <div id="recurring-fields" style="display:none;">
+          <div class="subtitle" style="margin-bottom:4px;">Recurring scheduling</div>
+
+          <div style="display:flex; gap:10px;">
+            <div class="field" style="flex:1;">
+              <label for="repeat-freq">Frequency</label>
+              <select id="repeat-freq" name="repeat_freq">
+                <option value="daily" {% if q.repeat_freq == "daily" %}selected{% endif %}>Daily</option>
+                <option value="weekly" {% if q.repeat_freq == "weekly" %}selected{% endif %}>Weekly</option>
+                <option value="monthly" {% if q.repeat_freq == "monthly" %}selected{% endif %}>Monthly</option>
+              </select>
+            </div>
+            <div class="field" style="flex:1;">
+              <label for="repeat-interval">Interval</label>
+              <input id="repeat-interval" name="repeat_interval" type="number" min="1" value="{{ q.repeat_interval or 1 }}">
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <div class="field" style="flex:1;">
+              <label for="recur-start-date">Start date</label>
+              <input id="recur-start-date" name="start_date" type="date" value="{{ q.start_date or '' }}">
+            </div>
+            <div class="field" style="flex:1;">
+              <label for="recur-end-date">End date</label>
+              <input id="recur-end-date" name="end_date" type="date" value="{{ q.end_date or '' }}">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="recur-anchor-date">Anchor date</label>
+            <input id="recur-anchor-date" name="anchor_date" type="date" value="{{ q.anchor_date or '' }}">
+          </div>
+
+          <div id="weekly-fields" style="display:none;">
+            <div class="field">
+              <label>Weekdays</label>
+              <div class="qb-weekdays">
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="1" {% if q.repeat_weekdays and 1 in q.repeat_weekdays %}checked{% endif %}> Mon</label>
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="2" {% if q.repeat_weekdays and 2 in q.repeat_weekdays %}checked{% endif %}> Tue</label>
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="3" {% if q.repeat_weekdays and 3 in q.repeat_weekdays %}checked{% endif %}> Wed</label>
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="4" {% if q.repeat_weekdays and 4 in q.repeat_weekdays %}checked{% endif %}> Thu</label>
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="5" {% if q.repeat_weekdays and 5 in q.repeat_weekdays %}checked{% endif %}> Fri</label>
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="6" {% if q.repeat_weekdays and 6 in q.repeat_weekdays %}checked{% endif %}> Sat</label>
+                <label class="qb-check"><input type="checkbox" name="repeat_weekdays" value="7" {% if q.repeat_weekdays and 7 in q.repeat_weekdays %}checked{% endif %}> Sun</label>
+              </div>
+            </div>
+          </div>
+
+          <div id="monthly-fields" style="display:none;">
+            {% set month_mode = "day" %}
+            {% if q.repeat_month_day is none and q.repeat_month_week and q.repeat_month_weekday %}
+              {% set month_mode = "weekday" %}
+            {% endif %}
+
+            <div class="field">
+              <label>Monthly rule</label>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <label class="qb-check">
+                  <input type="radio" name="month_mode" value="day" {% if month_mode == "day" %}checked{% endif %}>
+                  Day of month
+                </label>
+                <label class="qb-check">
+                  <input type="radio" name="month_mode" value="weekday" {% if month_mode == "weekday" %}checked{% endif %}>
+                  Nth weekday
+                </label>
+              </div>
+            </div>
+
+            <div id="month-day-fields">
+              <div class="field">
+                <label for="month-day">Day of month (1–31)</label>
+                <input id="month-day" name="repeat_month_day" type="number" min="1" max="31" value="{{ q.repeat_month_day or 1 }}">
+              </div>
+            </div>
+
+            <div id="month-weekday-fields" style="display:none;">
+              <div style="display:flex; gap:10px;">
+                <div class="field" style="flex:1;">
+                  <label for="month-week">Week</label>
+                  <select id="month-week" name="repeat_month_week">
+                    <option value="1" {% if q.repeat_month_week == 1 %}selected{% endif %}>1st</option>
+                    <option value="2" {% if q.repeat_month_week == 2 %}selected{% endif %}>2nd</option>
+                    <option value="3" {% if q.repeat_month_week == 3 %}selected{% endif %}>3rd</option>
+                    <option value="4" {% if q.repeat_month_week == 4 %}selected{% endif %}>4th</option>
+                    <option value="5" {% if q.repeat_month_week == 5 %}selected{% endif %}>Last</option>
+                  </select>
+                </div>
+                <div class="field" style="flex:1;">
+                  <label for="month-weekday">Weekday</label>
+                  <select id="month-weekday" name="repeat_month_weekday">
+                    <option value="1" {% if q.repeat_month_weekday == 1 %}selected{% endif %}>Mon</option>
+                    <option value="2" {% if q.repeat_month_weekday == 2 %}selected{% endif %}>Tue</option>
+                    <option value="3" {% if q.repeat_month_weekday == 3 %}selected{% endif %}>Wed</option>
+                    <option value="4" {% if q.repeat_month_weekday == 4 %}selected{% endif %}>Thu</option>
+                    <option value="5" {% if q.repeat_month_weekday == 5 %}selected{% endif %}>Fri</option>
+                    <option value="6" {% if q.repeat_month_weekday == 6 %}selected{% endif %}>Sat</option>
+                    <option value="7" {% if q.repeat_month_weekday == 7 %}selected{% endif %}>Sun</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -60,5 +182,5 @@
       </div>
     </form>
   </div>
-</div>
+</div
 

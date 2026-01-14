@@ -1,0 +1,137 @@
+{# expected variables (optional):
+  once_start_date, once_due_date,
+  repeat_freq, repeat_interval,
+  anchor_date, start_date, end_date,
+  repeat_weekdays,
+  repeat_month_day, repeat_month_week, repeat_month_weekday
+#}
+
+<hr style="border:none;border-top:1px solid rgba(148,163,184,0.35); margin:6px 0;">
+
+<div class="subtitle" style="margin-top:2px;">
+  Scheduling (ignore timezone — dates are treated as UTC in the backend for now)
+</div>
+
+<!-- ONCE -->
+<div data-schedule-kind="once" style="margin-top:10px;">
+  <div style="display:flex; gap:10px;">
+    <div class="field" style="flex:1;">
+      <label for="once-start-date">Start date</label>
+      <input id="once-start-date" name="once_start_date" type="date" value="{{ once_start_date or '' }}">
+    </div>
+    <div class="field" style="flex:1;">
+      <label for="once-due-date">Due date</label>
+      <input id="once-due-date" name="once_due_date" type="date" value="{{ once_due_date or '' }}">
+    </div>
+  </div>
+  <div class="subtitle" style="margin-top:6px;">
+    One-time quests are “due” every day from start → due, until completed.
+  </div>
+</div>
+
+<!-- RECURRING -->
+<div data-schedule-kind="recurring" style="margin-top:10px;">
+  <div style="display:flex; gap:10px;">
+    <div class="field" style="flex:1;">
+      <label for="repeat-freq">Frequency</label>
+      <select id="repeat-freq" name="repeat_freq">
+        <option value="daily" {% if repeat_freq == 'daily' %}selected{% endif %}>Daily</option>
+        <option value="weekly" {% if repeat_freq == 'weekly' %}selected{% endif %}>Weekly</option>
+        <option value="monthly" {% if repeat_freq == 'monthly' %}selected{% endif %}>Monthly</option>
+      </select>
+    </div>
+    <div class="field" style="flex:1;">
+      <label for="repeat-interval">Every</label>
+      <input id="repeat-interval" name="repeat_interval" type="number" min="1" value="{{ repeat_interval or 1 }}">
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-top:10px;">
+    <div class="field" style="flex:1;">
+      <label for="anchor-date">Anchor date</label>
+      <input id="anchor-date" name="anchor_date" type="date" value="{{ anchor_date or '' }}">
+    </div>
+    <div class="field" style="flex:1;">
+      <label for="start-date">Start date</label>
+      <input id="start-date" name="start_date" type="date" value="{{ start_date or '' }}">
+    </div>
+    <div class="field" style="flex:1;">
+      <label for="end-date">End date</label>
+      <input id="end-date" name="end_date" type="date" value="{{ end_date or '' }}">
+    </div>
+  </div>
+
+  <!-- WEEKLY -->
+  <div data-repeat-freq="weekly" style="margin-top:10px;">
+    <label style="font-size:13px;font-weight:600;">Weekdays</label>
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;">
+      {% set wds = repeat_weekdays or [] %}
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="1" {% if 1 in wds %}checked{% endif %}> Mon</label>
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="2" {% if 2 in wds %}checked{% endif %}> Tue</label>
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="3" {% if 3 in wds %}checked{% endif %}> Wed</label>
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="4" {% if 4 in wds %}checked{% endif %}> Thu</label>
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="5" {% if 5 in wds %}checked{% endif %}> Fri</label>
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="6" {% if 6 in wds %}checked{% endif %}> Sat</label>
+      <label class="pill"><input type="checkbox" name="repeat_weekdays" value="7" {% if 7 in wds %}checked{% endif %}> Sun</label>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div data-repeat-freq="monthly" style="margin-top:10px;">
+    {% set month_rule = 'dom' %}
+    {% if repeat_month_week and repeat_month_weekday %}
+      {% set month_rule = 'nth' %}
+    {% endif %}
+    {% if repeat_month_day %}
+      {% set month_rule = 'dom' %}
+    {% endif %}
+
+    <label style="font-size:13px;font-weight:600;">Monthly rule</label>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:6px;">
+      <label class="pill">
+        <input type="radio" name="month_rule" value="dom" {% if month_rule == 'dom' %}checked{% endif %}>
+        Day of month
+      </label>
+      <label class="pill">
+        <input type="radio" name="month_rule" value="nth" {% if month_rule == 'nth' %}checked{% endif %}>
+        Nth weekday
+      </label>
+    </div>
+
+    <div data-month-rule="dom" style="margin-top:10px;">
+      <div class="field" style="max-width:220px;">
+        <label for="repeat-month-day">Day (1–31)</label>
+        <input id="repeat-month-day" name="repeat_month_day" type="number" min="1" max="31" value="{{ repeat_month_day or '' }}">
+      </div>
+    </div>
+
+    <div data-month-rule="nth" style="margin-top:10px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <div class="field" style="flex:1; min-width:180px;">
+          <label for="repeat-month-week">Week</label>
+          <select id="repeat-month-week" name="repeat_month_week">
+            <option value="1" {% if repeat_month_week == 1 %}selected{% endif %}>1st</option>
+            <option value="2" {% if repeat_month_week == 2 %}selected{% endif %}>2nd</option>
+            <option value="3" {% if repeat_month_week == 3 %}selected{% endif %}>3rd</option>
+            <option value="4" {% if repeat_month_week == 4 %}selected{% endif %}>4th</option>
+            <option value="5" {% if repeat_month_week == 5 %}selected{% endif %}>Last</option>
+          </select>
+        </div>
+
+        <div class="field" style="flex:1; min-width:180px;">
+          <label for="repeat-month-weekday">Weekday</label>
+          <select id="repeat-month-weekday" name="repeat_month_weekday">
+            <option value="1" {% if repeat_month_weekday == 1 %}selected{% endif %}>Mon</option>
+            <option value="2" {% if repeat_month_weekday == 2 %}selected{% endif %}>Tue</option>
+            <option value="3" {% if repeat_month_weekday == 3 %}selected{% endif %}>Wed</option>
+            <option value="4" {% if repeat_month_weekday == 4 %}selected{% endif %}>Thu</option>
+            <option value="5" {% if repeat_month_weekday == 5 %}selected{% endif %}>Fri</option>
+            <option value="6" {% if repeat_month_weekday == 6 %}selected{% endif %}>Sat</option>
+            <option value="7" {% if repeat_month_weekday == 7 %}selected{% endif %}>Sun</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

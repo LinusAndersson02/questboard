@@ -1,0 +1,13 @@
+{% if quests and quests|length > 0 %}
+  {% for item in quests %}
+    {% set q = item.quest %}
+    {% set due = item.is_due %}
+    {% set completed = item.is_completed %}
+    {% include "partials/quest_row.html" %}
+  {% endfor %}
+{% else %}
+  <li class="subtitle" style="margin-top:4px;">
+    No quests match this filter.
+  </li>
+{% endif %}
+

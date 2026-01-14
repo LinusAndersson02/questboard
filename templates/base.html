@@ -484,6 +484,72 @@
     {% block content %}{% endblock %}
     <div id="modal-root"></div>
   </main>
+
+
+  <script>
+(function () {
+  function setEnabled(root, enabled) {
+    root.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+      // don’t disable submit buttons / close buttons; only form inputs
+      if (el.type === 'submit' || el.getAttribute('aria-label') === 'Close') return;
+      el.disabled = !enabled;
+    });
+  }
+
+  function showOnly(container, selectorToShow, selectorAll) {
+    container.querySelectorAll(selectorAll).forEach(function (el) {
+      var show = el.matches(selectorToShow);
+      el.style.display = show ? '' : 'none';
+      setEnabled(el, show);
+    });
+  }
+
+  function initQuestModal(modalRoot) {
+    var kindEl = modalRoot.querySelector('#quest-kind');
+    var freqEl = modalRoot.querySelector('#repeat-freq');
+
+    if (!kindEl) return;
+
+    function refresh() {
+      // kind sections
+      showOnly(modalRoot, '[data-schedule-kind="' + kindEl.value + '"]', '[data-schedule-kind]');
+
+      // recurring sections by freq
+      if (freqEl) {
+        showOnly(modalRoot, '[data-repeat-freq="' + freqEl.value + '"]', '[data-repeat-freq]');
+
+        // monthly rule
+        if (freqEl.value === 'monthly') {
+          var rule = 'dom';
+          var checked = modalRoot.querySelector('input[name="month_rule"]:checked');
+          if (checked) rule = checked.value;
+          showOnly(modalRoot, '[data-month-rule="' + rule + '"]', '[data-month-rule]');
+        }
+      }
+    }
+
+    kindEl.addEventListener('change', refresh);
+    if (freqEl) freqEl.addEventListener('change', refresh);
+
+    modalRoot.querySelectorAll('input[name="month_rule"]').forEach(function (el) {
+      el.addEventListener('change', refresh);
+    });
+
+    refresh();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    initQuestModal(document);
+  });
+
+  document.body.addEventListener('htmx:afterSwap', function (evt) {
+    if (evt.target && evt.target.id === 'modal-root') {
+      initQuestModal(evt.target);
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
 

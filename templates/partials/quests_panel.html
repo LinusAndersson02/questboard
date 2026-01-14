@@ -1,0 +1,122 @@
+
+{# expects:
+    rows: list of UiQuestRow (flattened quest + status + next_due)
+    scope: "all" | "today" | "week" | "month"
+    kind:  "all" | "once" | "recurring"
+    state: "all" | "todo" | "done"
+#}
+
+<div id="quests-panel">
+  <div class="qb-panel-top">
+    <div class="qb-filters">
+      <div class="qb-filter-group">
+        <span class="qb-filter-label">Scope</span>
+        <button class="btn btn-ghost {% if scope == 'all' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope=all&kind={{ kind }}&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope=all&kind={{ kind }}&state={{ state }}">
+          All
+        </button>
+
+        <button class="btn btn-ghost {% if scope == 'today' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope=today&kind={{ kind }}&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope=today&kind={{ kind }}&state={{ state }}">
+          Today
+        </button>
+
+        <button class="btn btn-ghost {% if scope == 'week' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope=week&kind={{ kind }}&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope=week&kind={{ kind }}&state={{ state }}">
+          This week
+        </button>
+
+        <button class="btn btn-ghost {% if scope == 'month' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope=month&kind={{ kind }}&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope=month&kind={{ kind }}&state={{ state }}">
+          This month
+        </button>
+      </div>
+
+      <div class="qb-filter-group">
+        <span class="qb-filter-label">Kind</span>
+        <button class="btn btn-ghost {% if kind == 'all' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope={{ scope }}&kind=all&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope={{ scope }}&kind=all&state={{ state }}">
+          All
+        </button>
+
+        <button class="btn btn-ghost {% if kind == 'recurring' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope={{ scope }}&kind=recurring&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope={{ scope }}&kind=recurring&state={{ state }}">
+          Recurring
+        </button>
+
+        <button class="btn btn-ghost {% if kind == 'once' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope={{ scope }}&kind=once&state={{ state }}"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope={{ scope }}&kind=once&state={{ state }}">
+          One-time
+        </button>
+      </div>
+
+      <div class="qb-filter-group">
+        <span class="qb-filter-label">Status</span>
+        <button class="btn btn-ghost {% if state == 'all' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope={{ scope }}&kind={{ kind }}&state=all"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope={{ scope }}&kind={{ kind }}&state=all">
+          All
+        </button>
+
+        <button class="btn btn-ghost {% if state == 'todo' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope={{ scope }}&kind={{ kind }}&state=todo"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope={{ scope }}&kind={{ kind }}&state=todo">
+          To do
+        </button>
+
+        <button class="btn btn-ghost {% if state == 'done' %}btn-active{% endif %}"
+                hx-get="/ui/quests/panel?scope={{ scope }}&kind={{ kind }}&state=done"
+                hx-target="#quests-panel"
+                hx-swap="outerHTML"
+                hx-push-url="/?scope={{ scope }}&kind={{ kind }}&state=done">
+          Done
+        </button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary"
+            hx-get="/ui/quests/new?scope={{ scope }}&kind={{ kind }}&state={{ state }}"
+            hx-target="#modal-root"
+            hx-swap="innerHTML">
+      + New quest
+    </button>
+  </div>
+
+  <ul id="quests-list" class="quest-list" aria-label="Your quests">
+    {% if rows and rows|length > 0 %}
+      {% for row in rows %}
+        {% set q = row %}
+        {% include "partials/quest_row.html" %}
+      {% endfor %}
+    {% else %}
+      <li class="subtitle" style="margin-top:4px;">
+        No quests match this filter.
+      </li>
+    {% endif %}
+  </ul>
+</div>

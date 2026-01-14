@@ -3,29 +3,28 @@ mod quests;
 mod ui;
 
 use axum::{
+    Router,
     extract::State,
     http::StatusCode,
     response::{Html, IntoResponse},
     routing::get,
-    Router,
 };
-use minijinja::{context, path_loader, Environment};
+use minijinja::{Environment, context, path_loader};
 use minijinja_autoreload::AutoReloader;
 use sqlx::PgPool;
 use std::{sync::Arc, time::Duration};
 use time::{Duration as TimeDuration, OffsetDateTime};
 use tower_http::{
+    LatencyUnit,
     classify::ServerErrorsFailureClass,
     trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
-    LatencyUnit,
 };
-use tracing::{error, Level, Span};
+use tracing::{Level, Span, error};
 
 use axum_login::login_required;
 
 use crate::{
     auth::{AuthSession, User},
-    models::Quest,
     routes::quests::quests_router,
     services::quest_service,
 };
@@ -47,10 +46,9 @@ fn effective_streak_display(user: &User, now: OffsetDateTime) -> i32 {
 async fn index(State(state): State<AppState>, auth: AuthSession) -> impl IntoResponse {
     let current_user: Option<User> = auth.user.clone();
 
-      let now = OffsetDateTime::now_utc();
-
-    let quests: Option<Vec<(Quest, bool)>> = if let Some(ref u) = current_user {
-        match quest_service::list_quests_for_user_with_status(&state.db_pool, u.id, now).await {
+    let now = OffsetDateTime::now_utc();
+    let quests = if let Some(ref u) = current_user {
+        match quest_service::list_quests_for_user(&state.db_pool, u.id, now).await {
             Ok(list) => Some(list),
             Err(e) => {
                 error!(?e, "failed to load quests for user");
@@ -60,7 +58,6 @@ async fn index(State(state): State<AppState>, auth: AuthSession) -> impl IntoRes
     } else {
         None
     };
-
 
     let env = match state.templates.acquire_env() {
         Ok(env) => env,
@@ -159,8 +156,8 @@ pub async fn create_routes(db_pool: PgPool) -> anyhow::Result<Router> {
                 login_url = "/auth/google/start"
             )),
         )
-        .merge(quests_router())       // JSON API
-        .merge(ui::ui_router())       // HTMX UI endpoints
+        .merge(quests_router()) // JSON API
+        .merge(ui::ui_router()) // HTMX UI endpoints
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(
@@ -211,4 +208,3 @@ pub fn level_info(xp_total: i64) -> LevelInfo {
         needed_for_next,
     }
 }
-

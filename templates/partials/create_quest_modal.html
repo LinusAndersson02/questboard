@@ -32,7 +32,7 @@
         <div class="field">
           <label for="quest-kind">Kind</label>
           <select id="quest-kind" name="kind">
-            <option value="once">One-time</option>
+            <option value="once" selected>One-time</option>
             <option value="recurring">Recurring</option>
           </select>
         </div>
@@ -47,6 +47,9 @@
             <input id="quest-coins" name="coin_reward" type="number" value="1" min="0">
           </div>
         </div>
+
+        {# Scheduling fields (shared) #}
+        {% include "partials/schedule_fields.html" %}
       </div>
 
       <div class="modal-footer">

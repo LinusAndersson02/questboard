@@ -6,9 +6,9 @@
       <div class="card-header">
         <div>
           <div class="card-title">Welcome back, {{ user.name or user.email }} 👋</div>
-          <div class="subtitle">
-            Track your quests, earn XP, and keep your streak alive.
-          </div>
+          <div class="subtitle">Track your quests, earn XP, and keep your streak alive.</div>
+
+          {% include "partials/filters_bar.html" %}
         </div>
 
         <button class="btn btn-primary"
@@ -21,28 +21,16 @@
 
       <section aria-label="Your quests">
         <ul id="quests-list" class="quest-list">
-          {% if quests and quests|length > 0 %}
-            {% for pair in quests %}
-              {% set q = pair[0] %}
-              {% set completed = pair[1] %}
-              {% include "partials/quest_row.html" %}
-            {% endfor %}
-          {% else %}
-            <li class="subtitle" style="margin-top:4px;">
-              You don't have any quests yet. Create your first one to get started!
-            </li>
-          {% endif %}
+          {% include "partials/quests_list.html" %}
         </ul>
       </section>
     </div>
-
   {% else %}
     <div class="card">
       <h1>Welcome to Questboard</h1>
       <p>Sign in to start tracking your quests, gaining XP, and earning coins.</p>
-      <p class="subtitle">
-        Click “Continue with Google” in the header to get started.
-      </p>
+      <p class="subtitle">Click “Continue with Google” in the header to get started.</p>
     </div>
   {% endif %}
 {% endblock %}
+

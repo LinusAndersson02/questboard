@@ -1,4 +1,6 @@
 pub mod quest;
 
-pub use quest::{Quest, QuestCompletion, QuestKind, RepeatUnit, CreateQuestInput, UpdateQuestInput};
-
+pub use quest::{
+    CreateQuestInput, Quest, QuestCompletion, QuestKind, QuestWithStatus, RepeatFreq,
+    UpdateQuestInput,
+};
