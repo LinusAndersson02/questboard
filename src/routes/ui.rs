@@ -102,17 +102,42 @@ pub async fn ui_edit_quest_modal(
     Path(id): Path<Uuid>,
 ) -> Result<Html<String>, StatusCode> {
     let user = auth.user.ok_or(StatusCode::UNAUTHORIZED)?;
+
     let q = quest_service::get_quest_by_id(&state.db_pool, user.id, id)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
+    // Prefill <input type="date"> values (must be YYYY-MM-DD)
+    let once_start_date = q.start_at.map(|dt| dt.date().to_string());
+    let once_due_date = q.due_at.map(|dt| dt.date().to_string());
+
+    let anchor_date = q.anchor_date.map(|d| d.to_string());
+    let start_date = q.start_date.map(|d| d.to_string());
+    let end_date = q.end_date.map(|d| d.to_string());
+
+    // For monthly UI toggle
+    let month_rule = if q.repeat_month_week.is_some() && q.repeat_month_weekday.is_some() {
+        "nth"
+    } else {
+        "dom"
+    };
+
     let html = render_template(
         &state,
         "partials/edit_quest_modal.html",
-        context! { q => q },
+        context! {
+            q => q,
+            once_start_date => once_start_date,
+            once_due_date => once_due_date,
+            anchor_date => anchor_date,
+            start_date => start_date,
+            end_date => end_date,
+            month_rule => month_rule,
+        },
     )
     .await?;
+
     Ok(Html(html))
 }
 
@@ -361,20 +386,24 @@ pub async fn ui_complete_quest(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let result = quest_service::complete_quest_and_reward(&state.db_pool, user.id, &quest, now)
+    let _result = quest_service::complete_quest_and_reward(&state.db_pool, user.id, &quest, now)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let completed = matches!(
-        result,
-        quest_service::CompleteQuestResult::Completed(_)
-            | quest_service::CompleteQuestResult::AlreadyCompleted
-    );
+    // Re-fetch with status so the UI is always correct after completion
+    let item = quest_service::get_quest_by_id_with_status(&state.db_pool, user.id, id, now)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
 
     let row_html = render_template(
         &state,
         "partials/quest_row.html",
-        context! { q => quest, completed => completed },
+        context! {
+            q => item.quest,
+            due => item.is_due,
+            completed => item.is_completed
+        },
     )
     .await?;
 
@@ -410,9 +439,12 @@ pub async fn ui_list_quests(
 
     let mut quests = quest_service::list_quests_for_user(&state.db_pool, user.id, now)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|e| {
+            tracing::error!(?e, "ui_list_quests: list_quests_for_user failed");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
-    // Filter
+    // filter
     let filter = q.filter.unwrap_or_else(|| "all".to_string());
     quests = apply_filter(quests, &filter, now);
 

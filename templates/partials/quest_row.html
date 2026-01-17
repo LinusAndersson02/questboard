@@ -16,6 +16,11 @@
         <span class="badge">Due</span>
       {% endif %}
 
+      {% if q.window_start %}
+  <span>🗓️ {{ q.window_start }}{% if q.window_end %} → {{ q.window_end }}{% endif %}</span>
+{% endif %}
+
+
       {% if completed %}
         <span class="badge badge-done">Completed</span>
       {% endif %}

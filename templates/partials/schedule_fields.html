@@ -6,6 +6,25 @@
   repeat_month_day, repeat_month_week, repeat_month_weekday
 #}
 
+{# If q exists (edit modal), derive the scheduling vars from it #}
+{% if q is defined %}
+  {% set once_start_date = q.start_at and q.start_at.date() ~ '' or once_start_date %}
+  {% set once_due_date   = q.due_at and q.due_at.date() ~ '' or once_due_date %}
+
+  {% set repeat_freq     = q.repeat_freq or repeat_freq %}
+  {% set repeat_interval = q.repeat_interval or repeat_interval %}
+
+  {% set anchor_date     = q.anchor_date and q.anchor_date ~ '' or anchor_date %}
+  {% set start_date      = q.start_date and q.start_date ~ '' or start_date %}
+  {% set end_date        = q.end_date and q.end_date ~ '' or end_date %}
+
+  {% set repeat_weekdays = q.repeat_weekdays or repeat_weekdays %}
+
+  {% set repeat_month_day     = q.repeat_month_day or repeat_month_day %}
+  {% set repeat_month_week    = q.repeat_month_week or repeat_month_week %}
+  {% set repeat_month_weekday = q.repeat_month_weekday or repeat_month_weekday %}
+{% endif %}
+
 <hr style="border:none;border-top:1px solid rgba(148,163,184,0.35); margin:6px 0;">
 
 <div class="subtitle" style="margin-top:2px;">

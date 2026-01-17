@@ -72,8 +72,8 @@ pub struct QuestWithStatus {
     // Useful for UI/debugging and future filtering
     pub period_start: Option<Date>,
     pub period_end: Option<Date>,
-}
 
+}
 
 #[derive(Debug, FromRow, Deserialize, Serialize)]
 pub struct QuestCompletion {
@@ -143,4 +143,3 @@ pub struct UpdateQuestInput {
     pub due_time: Option<Time>,
     pub timezone: Option<String>,
 }
-

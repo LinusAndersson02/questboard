@@ -1,6 +1,6 @@
 {% if quests and quests|length > 0 %}
   {% for item in quests %}
-    {% set q = item.quest %}
+    {% set q = item %}
     {% set due = item.is_due %}
     {% set completed = item.is_completed %}
     {% include "partials/quest_row.html" %}

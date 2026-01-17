@@ -1,5 +1,6 @@
 use crate::models::{
-    CreateQuestInput, Quest, QuestCompletion, QuestKind, QuestWithStatus, RepeatFreq, UpdateQuestInput,
+    CreateQuestInput, Quest, QuestCompletion, QuestKind, QuestWithStatus, RepeatFreq,
+    UpdateQuestInput,
 };
 
 use sqlx::{PgPool, Postgres, QueryBuilder, Transaction};
@@ -41,7 +42,10 @@ struct UserStatsRow {
 // Public queries
 // -------------------------
 
-pub async fn fetch_quests_for_user(pool: &PgPool, user_id: Uuid) -> Result<Vec<Quest>, sqlx::Error> {
+pub async fn fetch_quests_for_user(
+    pool: &PgPool,
+    user_id: Uuid,
+) -> Result<Vec<Quest>, sqlx::Error> {
     sqlx::query_as!(
         Quest,
         r#"
@@ -95,7 +99,6 @@ pub async fn list_quests_for_user(
     add_status_bulk(pool, quests, now).await
 }
 
-
 pub async fn get_quest_by_id(
     pool: &PgPool,
     user_id: Uuid,
@@ -144,7 +147,6 @@ pub async fn get_quest_by_id(
     .await
 }
 
-
 pub async fn get_quest_by_id_with_status(
     pool: &PgPool,
     user_id: Uuid,
@@ -152,7 +154,9 @@ pub async fn get_quest_by_id_with_status(
     now: OffsetDateTime,
 ) -> Result<Option<QuestWithStatus>, sqlx::Error> {
     let q = get_quest_by_id(pool, user_id, quest_id).await?;
-    let Some(q) = q else { return Ok(None); };
+    let Some(q) = q else {
+        return Ok(None);
+    };
 
     let p = current_period_for_quest(&q, now);
     let (is_due, is_completed, period_start, period_end) = if let Some((ps, pe)) = p {
@@ -183,7 +187,6 @@ pub async fn get_quest_by_id_with_status(
         period_end,
     }))
 }
-
 
 pub async fn create_quest(
     pool: &PgPool,
@@ -675,7 +678,6 @@ pub fn current_period_for_quest(quest: &Quest, now: OffsetDateTime) -> Option<(D
     }
 }
 
-
 #[derive(Debug, sqlx::FromRow)]
 struct CompletionKeyRow {
     quest_id: Uuid,
@@ -700,33 +702,35 @@ async fn add_status_bulk(
         }
     }
 
-    // Query all existing completions for those keys in one go
-    let mut completed: HashSet<(Uuid, Date, Date)> = HashSet::new();
+  // Query all existing completions for those keys in one go
+let mut completed: HashSet<(Uuid, Date, Date)> = HashSet::new();
 
-    if !keys.is_empty() {
-        let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-            "SELECT quest_id, period_start, period_end FROM quest_completions WHERE (quest_id, period_start, period_end) IN ("
-        );
+if !keys.is_empty() {
+    let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+        "SELECT quest_id, period_start, period_end \
+         FROM quest_completions \
+         WHERE "
+    );
 
-        let mut separated = qb.separated(", ");
-
-        for (qid, ps, pe) in &keys {
-            separated
-                .push("(")
-                .push_bind(*qid)
-                .push(", ")
-                .push_bind(*ps)
-                .push(", ")
-                .push_bind(*pe)
-                .push(")");
+    let mut first = true;
+    for (qid, ps, pe) in &keys {
+        if !first {
+            qb.push(" OR ");
         }
+        first = false;
 
-        qb.push(")");
-
-        let rows: Vec<CompletionKeyRow> = qb.build_query_as().fetch_all(pool).await?;
-
-        completed.extend(rows.into_iter().map(|r| (r.quest_id, r.period_start, r.period_end)));
+        qb.push("(quest_id = ")
+            .push_bind(*qid)
+            .push(" AND period_start = ")
+            .push_bind(*ps)
+            .push(" AND period_end = ")
+            .push_bind(*pe)
+            .push(")");
     }
+
+    let rows: Vec<CompletionKeyRow> = qb.build_query_as().fetch_all(pool).await?;
+    completed.extend(rows.into_iter().map(|r| (r.quest_id, r.period_start, r.period_end)));
+}
 
     // Build the output
     let mut out = Vec::with_capacity(quests.len());
@@ -1073,7 +1077,6 @@ fn month_index(d: Date) -> i32 {
     y * 12 + (m - 1)
 }
 
-
 fn is_leap_year(y: i32) -> bool {
     (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
 }
@@ -1131,4 +1134,3 @@ fn nth_weekday_of_month(y: i32, m: Month, weekday: i16, week: i16) -> Option<Dat
 
     Date::from_calendar_date(y, m, target_day as u8).ok()
 }
-
